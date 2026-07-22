@@ -12,7 +12,7 @@ Chrome or editable page elements may still take priority because **Command + Z**
 
 ## Report a problem
 
-[Open a GitHub issue](https://github.com/patrykchojecki/CmdZ/issues/new) and include:
+[Open a bug report](https://github.com/patrykchojecki/CmdZ/issues/new?template=bug_report.yml) and include:
 
 - your macOS version;
 - your Chrome version;
@@ -20,3 +20,5 @@ Chrome or editable page elements may still take priority because **Command + Z**
 - the steps needed to reproduce the problem.
 
 CmdZ supports Google Chrome 96 or newer on macOS.
+
+Please report suspected security vulnerabilities privately according to the [Security Policy](SECURITY.md).

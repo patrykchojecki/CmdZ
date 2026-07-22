@@ -62,15 +62,25 @@ CmdZ does not collect, store, or transmit data. The `sessions` permission is req
 
 The upload package, required listing graphics, dashboard copy, privacy disclosures, and submission checklist are prepared in [Chrome Web Store submission](STORE_LISTING.md).
 
+## Contributing
+
+Contributions are welcome when they preserve CmdZ's focused purpose and minimal permissions. Read the [contribution guide](CONTRIBUTING.md) before opening an issue or pull request, and follow the project's [Code of Conduct](CODE_OF_CONDUCT.md).
+
+Please report suspected vulnerabilities privately as described in the [Security Policy](SECURITY.md).
+
 ## Project structure
 
 ```text
 CmdZ/
+├── .github/            # Issue forms and pull request template
 ├── background.js       # Keyboard command and tab restoration logic
 ├── manifest.json       # Manifest V3 configuration
 ├── icons/              # Source and Chrome extension icons
 ├── store-assets/       # Chrome Web Store listing graphics
 ├── scripts/            # Release packaging script
+├── CODE_OF_CONDUCT.md  # Community participation standards
+├── CONTRIBUTING.md     # Contribution and development guide
+├── SECURITY.md         # Private vulnerability reporting policy
 ├── PRIVACY.md          # Public privacy policy
 ├── STORE_LISTING.md    # Dashboard copy and submission checklist
 └── dist/               # Ready-to-upload extension package

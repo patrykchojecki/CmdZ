@@ -1,0 +1,42 @@
+name: Feature request
+description: Suggest a focused improvement that preserves CmdZ's single purpose
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        CmdZ intentionally does one thing: reopen the most recently closed Chrome tab with Command + Z on macOS. Suggestions should support that purpose without adding unrelated functionality.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or limitation
+      description: What user problem would this change solve?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+      description: Describe the smallest change that would solve the problem.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Describe any workarounds or alternative approaches you considered.
+
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Project scope
+      options:
+        - label: This suggestion keeps CmdZ focused on reopening closed tabs with Command + Z on macOS.
+          required: true
+        - label: This suggestion does not require analytics, advertising, or access to page content.
+          required: true

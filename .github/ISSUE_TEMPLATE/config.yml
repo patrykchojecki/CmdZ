@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: CmdZ support
+    url: https://github.com/patrykchojecki/CmdZ/blob/main/SUPPORT.md
+    about: Read setup help and shortcut troubleshooting before opening an issue.
+  - name: Private security report
+    url: https://github.com/patrykchojecki/CmdZ/security/advisories/new
+    about: Report suspected vulnerabilities privately instead of opening a public issue.

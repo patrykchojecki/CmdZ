@@ -1,0 +1,85 @@
+name: Bug report
+description: Report a reproducible problem with CmdZ
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a problem. For shortcut conflicts, first check CmdZ at `chrome://extensions/shortcuts`.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What happened?
+      description: Describe the problem and what you were doing when it occurred.
+      placeholder: After closing a tab and pressing Command + Z...
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Provide the smallest reliable sequence that reproduces the problem.
+      placeholder: |
+        1. Open ...
+        2. Close ...
+        3. Press ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What did you expect CmdZ to do?
+    validations:
+      required: true
+
+  - type: input
+    id: chrome-version
+    attributes:
+      label: Chrome version
+      description: Find this at `chrome://version`.
+      placeholder: 140.0.7339.80
+    validations:
+      required: true
+
+  - type: input
+    id: macos-version
+    attributes:
+      label: macOS version
+      placeholder: macOS 15.6
+    validations:
+      required: true
+
+  - type: dropdown
+    id: shortcut
+    attributes:
+      label: Shortcut assignment
+      description: What does `chrome://extensions/shortcuts` show for CmdZ?
+      options:
+        - Command + Z is assigned
+        - The shortcut is unassigned
+        - A different shortcut is assigned
+        - Not sure
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Add relevant screenshots, extension errors, or other details. Do not include sensitive information.
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I searched existing issues for the same problem.
+          required: true
+        - label: I tested the latest released version of CmdZ.
+          required: true
