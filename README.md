@@ -46,6 +46,8 @@ Chrome can leave a suggested shortcut unassigned when it conflicts with another 
 
 Because <kbd>Command</kbd> + <kbd>Z</kbd> is also the standard Undo shortcut, Chrome or editable page elements may take priority in some contexts.
 
+For bug reports and diagnostic details, see [Support](SUPPORT.md).
+
 ## How it works
 
 The manifest registers a macOS keyboard command. When invoked, the service worker asks Chrome for recently closed sessions, finds the newest individual tab, and restores it by session ID.
@@ -54,7 +56,11 @@ CmdZ requires Chrome 96 or newer and uses only official Chrome extension APIs.
 
 ## Privacy
 
-CmdZ does not collect, store, or transmit data. The `sessions` permission is required solely to identify and restore recently closed tabs. The extension has no host permissions and cannot read page content.
+CmdZ does not collect, store, or transmit data. The `sessions` permission is required solely to identify and restore recently closed tabs. The extension has no host permissions and cannot read page content. See the full [Privacy Policy](PRIVACY.md).
+
+## Chrome Web Store
+
+The upload package, required listing graphics, dashboard copy, privacy disclosures, and submission checklist are prepared in [Chrome Web Store submission](STORE_LISTING.md).
 
 ## Project structure
 
@@ -63,8 +69,11 @@ CmdZ/
 ├── background.js       # Keyboard command and tab restoration logic
 ├── manifest.json       # Manifest V3 configuration
 ├── icons/              # Source and Chrome extension icons
-└── dist/
-    └── CmdZ-1.0.0.zip  # Ready-to-extract extension package
+├── store-assets/       # Chrome Web Store listing graphics
+├── scripts/            # Release packaging script
+├── PRIVACY.md          # Public privacy policy
+├── STORE_LISTING.md    # Dashboard copy and submission checklist
+└── dist/               # Ready-to-upload extension package
 ```
 
 ## Development
@@ -82,10 +91,7 @@ unzip -t dist/CmdZ-1.0.0.zip
 To rebuild the distributable archive from the repository root:
 
 ```sh
-zip -FS dist/CmdZ-1.0.0.zip \
-  manifest.json background.js \
-  icons/icon-16.png icons/icon-32.png \
-  icons/icon-48.png icons/icon-128.png
+./scripts/package-extension.sh
 ```
 
 ## License

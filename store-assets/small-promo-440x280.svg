@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="440" height="280" viewBox="0 0 440 280">
+  <defs>
+    <linearGradient id="background" x1="32" y1="12" x2="410" y2="268" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#7868FF"/>
+      <stop offset="1" stop-color="#3219C4"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0" cy="0" r="1" gradientTransform="translate(220 136) rotate(90) scale(150 210)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF" stop-opacity="0.18"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="440" height="280" fill="url(#background)"/>
+  <rect width="440" height="280" fill="url(#glow)"/>
+  <rect x="-30" y="34" width="180" height="72" rx="22" fill="#FFFFFF" opacity="0.06" transform="rotate(-8 60 70)"/>
+  <rect x="306" y="176" width="178" height="72" rx="22" fill="#FFFFFF" opacity="0.06" transform="rotate(8 395 212)"/>
+  <rect x="130" y="50" width="180" height="180" rx="48" fill="#FFFFFF" opacity="0.12"/>
+  <rect x="130.5" y="50.5" width="179" height="179" rx="47.5" fill="none" stroke="#FFFFFF" stroke-opacity="0.2"/>
+  <path d="M169 145a42 42 0 1 0 0 84h118a42 42 0 1 0 0-84 42 42 0 0 0-42 42v138a42 42 0 1 0 84 0 42 42 0 0 0-42-42H169a42 42 0 1 0 0 84 42 42 0 0 0 42-42V187a42 42 0 0 0-42-42Z" transform="matrix(.46 0 0 .46 116.96 22.24)" fill="none" stroke="#FFFFFF" stroke-width="24" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

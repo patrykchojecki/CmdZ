@@ -3,6 +3,7 @@
   "name": "CmdZ",
   "version": "1.0.0",
   "description": "Reopen the most recently closed tab with Command+Z.",
+  "homepage_url": "https://github.com/patrykchojecki/CmdZ",
   "minimum_chrome_version": "96",
   "permissions": ["sessions"],
   "background": {
