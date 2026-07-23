@@ -8,19 +8,17 @@
   Reopen your most recently closed Chrome tab with <kbd>Command</kbd> + <kbd>Z</kbd>.
 </p>
 
-CmdZ brings Safari's familiar reopen-tab shortcut to Google Chrome on macOS. It is a focused Manifest V3 extension with no popup, settings, analytics, page access, or network access.
+CmdZ brings Safari's familiar reopen-tab shortcut to Google Chrome on macOS.
 
-## Features
+## What it does
 
-- Restores the most recently closed tab with <kbd>Command</kbd> + <kbd>Z</kbd>
-- Skips closed-window sessions and restores the latest individual tab
-- Runs only when invoked, using a lightweight extension service worker
-- Requests one permission: `sessions`
-- Contains no third-party dependencies or remotely hosted code
+CmdZ has one feature: press <kbd>Command</kbd> + <kbd>Z</kbd> to reopen your most recently closed individual tab in Chrome. That is the extension's entire purpose.
+
+It stays lightweight by running only when invoked and requesting only the `sessions` permission. There is no popup, settings page, analytics, page access, network access, third-party dependency, or remotely hosted code.
 
 ## Install
 
-CmdZ is not currently published in the Chrome Web Store. Install it locally in a few steps:
+For now, install CmdZ locally in a few steps:
 
 1. Download or clone this repository:
 
@@ -60,7 +58,7 @@ CmdZ does not collect, store, or transmit data. The `sessions` permission is req
 
 ## Chrome Web Store
 
-The upload package, required listing graphics, dashboard copy, privacy disclosures, and submission checklist are prepared in [Chrome Web Store submission](STORE_LISTING.md).
+CmdZ is not currently available in the Chrome Web Store because I have chosen not to pay the required $5 developer registration fee for now. The extension remains free to install locally, and its upload package, listing graphics, dashboard copy, privacy disclosures, and submission checklist are prepared in [Chrome Web Store submission](STORE_LISTING.md).
 
 ## Contributing
 
