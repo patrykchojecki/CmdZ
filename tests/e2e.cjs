@@ -137,7 +137,7 @@ function createUpgradeableExtensionDirectory() {
   );
   const legacyManifest = {
     ...manifest,
-    version: "1.0.3",
+    version: "1.0.4",
   };
 
   fs.cpSync(
@@ -156,14 +156,33 @@ function createUpgradeableExtensionDirectory() {
   );
   fs.writeFileSync(
     path.join(extensionDirectory, "content.js"),
-    `document.addEventListener("keydown", (event) => {
-  if (!event.metaKey || event.key.toLowerCase() !== "z") return;
-  if (event.target.matches("input, textarea, [contenteditable=true], [role=application]")) return;
-  if (typeof chrome.runtime?.id !== "string") return;
-  event.preventDefault();
-  event.stopImmediatePropagation();
-  chrome.runtime.sendMessage({ type: "reopen-last-closed-tab" });
-});
+    `(() => {
+  let pendingUndo = null;
+  const beforeInputListener = (event) => {
+    if (event.inputType === "historyUndo" && pendingUndo) {
+      pendingUndo.undoObserved = true;
+    }
+  };
+  const listener = (event) => {
+    if (!event.metaKey || event.key.toLowerCase() !== "z") return;
+    const pending = { event, undoObserved: false };
+    pendingUndo = pending;
+    setTimeout(() => {
+      if (pendingUndo === pending) pendingUndo = null;
+      if (!pending.undoObserved && !pending.event.defaultPrevented) {
+        chrome.runtime.sendMessage({ type: "reopen-last-closed-tab" });
+      }
+    }, 0);
+  };
+  document.addEventListener("keydown", listener);
+  document.addEventListener("beforeinput", beforeInputListener, true);
+  globalThis.__cmdzShortcutListener = {
+    beforeInputListener,
+    disposeRecovery() {},
+    listener,
+    target: document,
+  };
+})();
 `,
   );
   fs.copyFileSync(
@@ -176,6 +195,21 @@ function createUpgradeableExtensionDirectory() {
   );
 
   return extensionDirectory;
+}
+
+async function loadUnpackedExtension(context, extensionDirectory) {
+  const browser = context.browser();
+  assert.ok(browser, "Playwright did not expose the Chrome browser session");
+  const session = await browser.newBrowserCDPSession();
+
+  try {
+    const { id } = await session.send("Extensions.loadUnpacked", {
+      path: extensionDirectory,
+    });
+    assert.equal(typeof id, "string", "Chrome did not load CmdZ");
+  } finally {
+    await session.detach();
+  }
 }
 
 async function reloadExtension(context, extensionDirectory) {
@@ -262,11 +296,9 @@ async function run() {
       executablePath: chromeBinary,
       headless: true,
       ignoreDefaultArgs: ["--disable-extensions"],
-      args: [
-        `--disable-extensions-except=${extensionDirectory}`,
-        `--load-extension=${extensionDirectory}`,
-      ],
+      args: ["--enable-unsafe-extension-debugging"],
     });
+    await loadUnpackedExtension(context, extensionDirectory);
 
     const page = context.pages()[0] || (await context.newPage());
     await page.goto(`${origin}/runtime.html`);
@@ -376,6 +408,43 @@ async function run() {
     await assertNoRestore(context, "custom-application");
     assert.equal(await page.evaluate(() => window.applicationUndoCount), 1);
 
+    await closeRestorableTab(context, origin, "stopped-keydown");
+    await page.locator("#stopped-keydown").focus();
+    await page.keyboard.press("Meta+z");
+    const stoppedKeydownRestore = await waitForRestoredTab(
+      context,
+      "stopped-keydown",
+    );
+    assert.ok(
+      stoppedKeydownRestore,
+      "CmdZ did not restore after the target stopped keydown propagation",
+    );
+    await stoppedKeydownRestore.close();
+
+    await closeRestorableTab(context, origin, "stopped-beforeinput");
+    const stoppedBeforeInput = page.locator("#stopped-beforeinput");
+    await stoppedBeforeInput.focus();
+    await stoppedBeforeInput.pressSequentially("draft");
+    await page.keyboard.press("Meta+z");
+    await assertNoRestore(context, "stopped-beforeinput");
+    assert.notEqual(await stoppedBeforeInput.inputValue(), "draft");
+
+    await closeRestorableTab(
+      context,
+      origin,
+      "empty-stopped-beforeinput",
+    );
+    await page.keyboard.press("Meta+z");
+    const emptyStoppedBeforeInputRestore = await waitForRestoredTab(
+      context,
+      "empty-stopped-beforeinput",
+    );
+    assert.ok(
+      emptyStoppedBeforeInputRestore,
+      "CmdZ did not restore after the propagation-stopping input exhausted its undo history",
+    );
+    await emptyStoppedBeforeInputRestore.close();
+
     await closeRestorableTab(context, origin, "docs-frame");
     const docsBody = page.frameLocator("#docs-frame").locator("body");
     await docsBody.focus();
@@ -388,7 +457,11 @@ async function run() {
     const finalRestore = await waitForRestoredTab(context, "docs-frame");
     assert.ok(finalRestore, "CmdZ did not resume tab restoration after editing");
 
-    console.log("CmdZ runtime checks passed in Chrome for Testing.");
+    console.log(
+      `CmdZ runtime checks passed in ${path.basename(chromeBinary)} ${
+        context.browser().version()
+      }.`,
+    );
   } finally {
     await context?.close();
     await new Promise((resolve) => server.close(resolve));

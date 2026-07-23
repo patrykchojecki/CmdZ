@@ -4,7 +4,7 @@ This file contains the copy, disclosures, assets, and final manual steps needed 
 
 ## Package
 
-Upload [`dist/CmdZ-1.0.4.zip`](dist/CmdZ-1.0.4.zip). The archive contains `manifest.json` at its root and only the files Chrome needs at runtime.
+Upload [`dist/CmdZ-1.0.5.zip`](dist/CmdZ-1.0.5.zip). The archive contains `manifest.json` at its root and only the files Chrome needs at runtime.
 
 ## Store Listing tab
 
@@ -27,17 +27,17 @@ Reopen closed tabs with Command+Z without overriding page undo.
 ```text
 Recover the last tab you closed in Chrome without sacrificing Undo on a website.
 
-Press Command+Z on macOS or Ctrl+Z on Windows and Linux. CmdZ first gives the website its normal Undo shortcut. If the page actually undoes an edit or handles the shortcut, CmdZ steps aside. If nothing is undone, CmdZ restores your most recently closed individual tab—even when an empty input or editor still has focus.
+Press Command+Z on macOS or Ctrl+Z on Windows and Linux. CmdZ first gives the website its normal Undo shortcut. If the page initiates native Undo or explicitly handles the shortcut, CmdZ steps aside. If nothing handles it, CmdZ restores your most recently closed individual tab. Native text fields and content-editable areas still restore after their Undo history is exhausted without requiring focus to move.
 
 The Command+Z behavior is inspired by Safari on macOS. A toolbar button is also available for direct tab restoration.
 
 - Reopens the most recently closed individual tab
-- Preserves Undo in Google Docs and other web editors
+- Preserves native Undo and shortcuts explicitly handled by web editors
 - Never reads typed text, field values, or page contents
 - No tracking, ads, accounts, or network requests
 - No popup, configuration, or third-party dependencies
 
-Chrome does not allow the page-level shortcut listener on internal chrome:// pages. Use the CmdZ toolbar button on those pages.
+Chrome does not allow the page-level shortcut listener on the New Tab page, internal chrome:// pages, the omnibox, or browser UI. Use the CmdZ toolbar button in those contexts. Chrome also does not expose custom editors' private Undo stacks, so empty-history detection is available only for native editing controls.
 ```
 
 **Category**
@@ -109,7 +109,7 @@ The scripting permission lets CmdZ attach its packaged shortcut listener to HTTP
 **Site access justification**
 
 ```text
-CmdZ runs a small local shortcut listener on HTTP and HTTPS pages so it can leave Command+Z or Ctrl+Z untouched when the page actually performs or handles Undo. This page-level handling is necessary because a browser-scoped extension command would consume the shortcut before editors such as Google Docs receive it. The listener checks only trusted Undo shortcut events, whether the page prevented the shortcut, and whether Chrome emitted a historyUndo event. It never reads typed text, focused elements, field values, or document contents, and it stores or transmits nothing. Site access also lets CmdZ reattach the packaged listener to pages that remain open across extension updates or reloads.
+CmdZ runs a small local shortcut listener on HTTP and HTTPS pages so it can leave Command+Z or Ctrl+Z untouched when the page initiates native Undo or explicitly handles the shortcut. This page-level handling is necessary because a browser-scoped extension command would consume the shortcut before web editors receive it. The listener checks only trusted Undo shortcut events, whether the page prevented the shortcut, and whether Chrome emitted a historyUndo event. It never reads typed text, focused elements, field values, or document contents, and it stores or transmits nothing. Site access also lets CmdZ reattach the packaged listener to pages that remain open across extension updates or reloads.
 ```
 
 **Remote code**
@@ -149,7 +149,7 @@ cross-platform support, and Safari inspiration.
 1. Confirm that the Privacy Policy URL above loads publicly.
 2. Register or confirm the Chrome Web Store developer account.
 3. Enable 2-Step Verification on the publishing Google Account.
-4. In the Developer Dashboard, select **Add new item** and upload `dist/CmdZ-1.0.4.zip`.
+4. In the Developer Dashboard, select **Add new item** and upload `dist/CmdZ-1.0.5.zip`.
 5. Paste the Store Listing and Privacy practices content above.
 6. Upload the three required graphic assets.
 7. Confirm the developer contact email and complete email verification if prompted.

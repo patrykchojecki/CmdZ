@@ -17,7 +17,7 @@ test("loads the undo-safe listener in web pages and editable child frames", () =
       js: ["content.js"],
       all_frames: true,
       match_about_blank: true,
-      run_at: "document_idle",
+      run_at: "document_start",
     },
   ]);
 });

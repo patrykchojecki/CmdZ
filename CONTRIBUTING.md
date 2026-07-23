@@ -49,7 +49,7 @@ node --check recovery.js
 node --test tests/*.test.js
 python3 -m json.tool manifest.json >/dev/null
 ./scripts/package-extension.sh
-unzip -t dist/CmdZ-1.0.4.zip
+unzip -t dist/CmdZ-1.0.5.zip
 ```
 
 Then test the extension manually:

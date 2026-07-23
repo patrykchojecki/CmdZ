@@ -121,13 +121,14 @@
       previousState.target.removeEventListener(
         "keydown",
         previousState.listener,
+        previousState.keydownCapture === true,
       );
 
       if (previousState.beforeInputListener) {
         previousState.target.removeEventListener(
           "beforeinput",
           previousState.beforeInputListener,
-          true,
+          previousState.beforeInputCapture !== false,
         );
       }
 
@@ -182,8 +183,8 @@
       window.removeEventListener("message", handleRecoveryComplete);
     };
 
-    document.addEventListener("keydown", listener);
-    document.addEventListener("beforeinput", beforeInputListener, true);
+    window.addEventListener("keydown", listener, true);
+    window.addEventListener("beforeinput", beforeInputListener, true);
 
     if (ownsRecovery) {
       recoveryTimer = setInterval(
@@ -195,9 +196,11 @@
 
     globalThis[LISTENER_STATE] = {
       beforeInputListener,
+      beforeInputCapture: true,
       disposeRecovery,
+      keydownCapture: true,
       listener,
-      target: document,
+      target: window,
     };
   }
 })();

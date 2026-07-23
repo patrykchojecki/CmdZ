@@ -11,7 +11,7 @@ Link the related issue, if one exists.
 - [ ] `node --check background.js`
 - [ ] `python3 -m json.tool manifest.json >/dev/null`
 - [ ] `./scripts/package-extension.sh`
-- [ ] `unzip -t dist/CmdZ-1.0.0.zip`
+- [ ] `unzip -t dist/CmdZ-<version>.zip`
 - [ ] Tested the unpacked extension in Google Chrome on macOS
 
 ## Project scope

@@ -18,10 +18,11 @@ CmdZ has one feature: press <kbd>Command</kbd> + <kbd>Z</kbd> on macOS or
 recently closed individual tab—unless the current page has something to undo.
 
 CmdZ first gives the website its normal Undo shortcut. If the page actually
-undoes an edit—or explicitly handles the shortcut—CmdZ steps aside. If nothing
-is undone, CmdZ restores the closed tab even when an empty input or editor still
-has focus. This includes editors such as Google Docs. You can also click the
-CmdZ toolbar icon to restore a tab directly.
+initiates a native Undo—or explicitly handles the shortcut—CmdZ steps aside. If
+nothing handles the shortcut, CmdZ restores the closed tab. In native text
+fields and content-editable areas, this still works after Undo history is
+exhausted without requiring focus to move. You can also click the CmdZ toolbar
+icon to restore a tab directly.
 
 CmdZ uses the `sessions` permission to restore tabs and the `scripting`
 permission to attach its small local shortcut listener to web pages, including
@@ -40,7 +41,7 @@ For now, install CmdZ locally in a few steps:
    git clone https://github.com/patrykchojecki/CmdZ.git
    ```
 
-   Alternatively, download [`dist/CmdZ-1.0.4.zip`](dist/CmdZ-1.0.4.zip) and extract it.
+   Alternatively, download [`dist/CmdZ-1.0.5.zip`](dist/CmdZ-1.0.5.zip) and extract it.
 
 2. Open `chrome://extensions` in Google Chrome.
 3. Enable **Developer mode** in the upper-right corner.
@@ -53,28 +54,38 @@ For now, install CmdZ locally in a few steps:
 
 CmdZ leaves the shortcut untouched when:
 
-- Chrome reports that an edit was actually undone;
+- Chrome reports a native Undo intention;
 - the website handles or prevents the shortcut itself;
 - an input method composition is active; or
 - the key press is an automatic repeat from holding the shortcut.
 
-Merely focusing an input or editor does not suppress tab restoration. Once its
-undo history is exhausted, the next shortcut restores the closed tab.
+Merely focusing a native input or content-editable area does not suppress tab
+restoration. Once its native Undo history is exhausted, the next shortcut
+restores the closed tab.
 
-Chrome does not allow content scripts on internal pages such as
-`chrome://extensions`. On those pages, click the CmdZ toolbar icon or use
-Chrome's built-in reopen-tab shortcut.
+Chrome does not allow page listeners on the New Tab page, other `chrome://`
+pages, the omnibox, or other browser UI. In those contexts, click the CmdZ
+toolbar icon or use Chrome's built-in reopen-tab shortcut.
+
+Custom editors decide for themselves whether to consume Undo. Chrome does not
+expose their private Undo stacks to extensions, so CmdZ deliberately does not
+promise empty-history detection inside every custom editor.
 
 For bug reports and diagnostic details, see [Support](SUPPORT.md).
 
 ## How it works
 
-CmdZ listens for the platform's normal Undo shortcut inside each web page and
-lets the trusted keyboard event continue normally. It then checks whether the
-page prevented the shortcut or Chrome emitted a `historyUndo` input event. If
-neither happened, the listener asks the service worker to restore the newest
-closed individual tab by session ID. The listener automatically reattaches to
-open pages after an extension update or reload.
+CmdZ listens for the platform's normal Undo shortcut at the earliest page
+phase and lets the trusted keyboard event continue normally. It then checks
+whether the page prevented the shortcut or Chrome emitted a `historyUndo`
+input event. If neither happened, the listener asks the service worker to
+restore the newest closed individual tab by session ID. The listener
+automatically attaches to pages that are already open on installation and
+reattaches after an update or reload from version 1.0.3 or newer.
+
+If you upgrade directly from 1.0.1 or 1.0.2, refresh tabs that were already
+open once. Chrome isolates their old listener after an extension reload, so a
+new version cannot safely detach it without reloading the page.
 
 CmdZ requires Chrome 96 or newer and uses only official Chrome extension APIs.
 
@@ -82,9 +93,9 @@ CmdZ requires Chrome 96 or newer and uses only official Chrome extension APIs.
 
 CmdZ does not collect, store, or transmit data. The `sessions` permission is
 required solely to identify and restore recently closed tabs. Its page-level
-listener checks only the trusted Undo key event and whether the page actually
-handled an undo; it does not read text, field values, or page contents. See the
-full [Privacy Policy](PRIVACY.md).
+listener checks only the trusted Undo key event and whether the page reported
+an Undo intention; it does not read text, field values, or page contents. See
+the full [Privacy Policy](PRIVACY.md).
 
 ## Chrome Web Store
 
@@ -129,7 +140,7 @@ node --check content.js
 node --check recovery.js
 node --test tests/*.test.js
 python3 -m json.tool manifest.json >/dev/null
-unzip -t dist/CmdZ-1.0.4.zip
+unzip -t dist/CmdZ-1.0.5.zip
 ```
 
 To rebuild the distributable archive from the repository root:

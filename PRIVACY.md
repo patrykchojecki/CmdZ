@@ -40,10 +40,10 @@ reattach its packaged shortcut listener to open pages after installation,
 update, or reload. CmdZ never downloads or executes remote code.
 
 CmdZ's shortcut listener runs on HTTP and HTTPS pages because a browser-scoped
-extension command would consume Undo before an editor such as Google Docs could
-receive it. The listener uses page access only to observe whether the trusted
-shortcut produced an Undo action or was handled by the page. It does not inspect
-or modify text, field values, focused elements, or document contents. A hidden
+extension command would consume Undo before a web editor could receive it. The
+listener uses page access only to observe whether the trusted shortcut produced
+an Undo intention or was handled by the page. It does not inspect or modify
+text, field values, focused elements, or document contents. A hidden
 extension-owned recovery frame may briefly load after CmdZ itself is reloaded;
 it can only request that the packaged listener be reattached to the same tab.
 

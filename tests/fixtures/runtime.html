@@ -20,9 +20,18 @@
       Custom application
     </div>
 
+    <button id="stopped-keydown" type="button">
+      Stops keydown propagation
+    </button>
+
+    <label>
+      Stops beforeinput propagation
+      <input id="stopped-beforeinput">
+    </label>
+
     <iframe
       id="docs-frame"
-      title="Google Docs-style editable frame"
+      title="Editable child frame"
       srcdoc="<!doctype html><html><body contenteditable='true' role='textbox'>Frame text</body></html>"
     ></iframe>
 
@@ -57,6 +66,33 @@
             window.applicationUndoCount += 1;
           }
         });
+
+      document
+        .getElementById("stopped-keydown")
+        .addEventListener("keydown", (event) => {
+          if (
+            event.key.toLowerCase() === "z" &&
+            event.metaKey &&
+            !event.altKey &&
+            !event.ctrlKey &&
+            !event.shiftKey
+          ) {
+            event.stopPropagation();
+          }
+        });
+
+      window.addEventListener(
+        "beforeinput",
+        (event) => {
+          if (
+            event.target.id === "stopped-beforeinput" &&
+            event.inputType === "historyUndo"
+          ) {
+            event.stopPropagation();
+          }
+        },
+        true
+      );
     </script>
   </body>
 </html>
