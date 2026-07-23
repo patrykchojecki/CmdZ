@@ -33,7 +33,7 @@ Changes should preserve the project's small footprint and privacy guarantees:
 - no analytics, telemetry, advertising, or network requests;
 - no remotely hosted code or third-party runtime dependencies;
 - no reading or modification of text, field values, or page contents;
-- limit the page-level listener to shortcut and editability checks;
+- limit the page-level listener to trusted shortcut and Undo outcome events;
 - only the minimum Chrome permissions needed to restore tabs and keep the
   page listener attached after extension reloads; and
 - no popup or settings page unless a future requirement clearly justifies one.
@@ -49,7 +49,7 @@ node --check recovery.js
 node --test tests/*.test.js
 python3 -m json.tool manifest.json >/dev/null
 ./scripts/package-extension.sh
-unzip -t dist/CmdZ-1.0.3.zip
+unzip -t dist/CmdZ-1.0.4.zip
 ```
 
 Then test the extension manually:
@@ -57,12 +57,14 @@ Then test the extension manually:
 1. Reload CmdZ at `chrome://extensions` while leaving the test page open.
 2. Type in an input, press Undo, and confirm that the text change is undone
    without reopening a tab.
-3. Repeat the Undo check in a content-editable or application-style editor.
-4. Close a different tab, focus a non-editable web page, and press the
+3. Press Undo again after the input's history is exhausted and confirm that the
+   closed tab now reopens without moving focus.
+4. Repeat both checks in a content-editable or application-style editor.
+5. Close a different tab, focus a non-editable web page, and press the
    platform's Undo shortcut.
-5. Confirm that the most recently closed individual tab reopens.
-6. Confirm that clicking the toolbar icon also restores a closed tab.
-7. Return to the page that stayed open during the extension reload and confirm
+6. Confirm that the most recently closed individual tab reopens.
+7. Confirm that clicking the toolbar icon also restores a closed tab.
+8. Return to the page that stayed open during the extension reload and confirm
    that the shortcut still works without refreshing it.
 
 ## Pull requests

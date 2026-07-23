@@ -2,25 +2,9 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 
 const {
-  handleKeydown,
-  isEditingElement,
-  isInEditingSurface,
+  createShortcutController,
   isUndoShortcut,
-  pageShouldHandleUndo,
 } = require("../content.js");
-
-function element(properties = {}, parentElement = null) {
-  return {
-    nodeType: 1,
-    localName: "div",
-    disabled: false,
-    readOnly: false,
-    isContentEditable: false,
-    parentElement,
-    getAttribute: () => null,
-    ...properties,
-  };
-}
 
 function keyEvent(properties = {}) {
   return {
@@ -33,18 +17,44 @@ function keyEvent(properties = {}) {
     isComposing: false,
     isTrusted: true,
     repeat: false,
-    composedPath: () => [],
-    preventDefault: () => {},
-    stopImmediatePropagation: () => {},
     ...properties,
   };
 }
 
-function documentWith(properties = {}) {
+function beforeInputEvent(properties = {}) {
   return {
-    activeElement: null,
-    designMode: "off",
+    inputType: "historyUndo",
+    isTrusted: true,
     ...properties,
+  };
+}
+
+function controllerHarness(platform = "macOS") {
+  const scheduled = [];
+  let restoreCount = 0;
+  const controller = createShortcutController({
+    platform,
+    restore: () => {
+      restoreCount += 1;
+    },
+    schedule: (callback) => {
+      scheduled.push(callback);
+    },
+  });
+
+  return {
+    controller,
+    flush() {
+      while (scheduled.length) {
+        scheduled.shift()();
+      }
+    },
+    get restoreCount() {
+      return restoreCount;
+    },
+    get scheduledCount() {
+      return scheduled.length;
+    },
   };
 }
 
@@ -82,201 +92,87 @@ test("does not treat modified or unrelated shortcuts as undo", () => {
   );
 });
 
-test("ignores synthetic shortcut events created by websites", () => {
-  const page = element({ localName: "body" });
-  let restored = false;
+test("defers restoration until the page has had a chance to undo", () => {
+  const harness = controllerHarness();
 
-  handleKeydown(
-    keyEvent({
-      isTrusted: false,
-      metaKey: true,
-      composedPath: () => [page],
-    }),
-    {
-      currentDocument: documentWith({ activeElement: page }),
-      platform: "macOS",
-      restore: () => {
-        restored = true;
-      },
-    },
-  );
+  harness.controller.handleKeydown(keyEvent({ metaKey: true }));
 
-  assert.equal(restored, false);
+  assert.equal(harness.restoreCount, 0);
+  assert.equal(harness.scheduledCount, 1);
 });
 
-test("recognizes native and ARIA editing elements", () => {
-  assert.equal(
-    isEditingElement(element({ localName: "textarea" })),
-    true,
-  );
-  assert.equal(
-    isEditingElement(element({ localName: "input", type: "text" })),
-    true,
-  );
-  assert.equal(
-    isEditingElement(element({ localName: "input", type: "checkbox" })),
-    false,
-  );
-  assert.equal(
-    isEditingElement(element({ isContentEditable: true })),
-    true,
-  );
-  assert.equal(
-    isEditingElement(element({ getAttribute: () => "application" })),
-    true,
-  );
-  assert.equal(
-    isEditingElement(element({ localName: "canvas" })),
-    true,
-  );
-  assert.equal(
-    isEditingElement(
-      element({
-        getAttribute: (name) =>
-          name === "aria-keyshortcuts" ? "Control+Z Meta+Z" : null,
-      }),
-    ),
-    true,
-  );
+test("restores a tab when the page does not handle undo", () => {
+  const harness = controllerHarness();
+
+  harness.controller.handleKeydown(keyEvent({ metaKey: true }));
+  harness.flush();
+
+  assert.equal(harness.restoreCount, 1);
 });
 
-test("recognizes an editing ancestor", () => {
-  const editor = element({ isContentEditable: true });
-  const child = element({}, editor);
+test("does not restore when a page prevents the shortcut", () => {
+  const harness = controllerHarness();
+  const event = keyEvent({ metaKey: true });
 
-  assert.equal(isInEditingSurface(child), true);
+  harness.controller.handleKeydown(event);
+  event.defaultPrevented = true;
+  harness.flush();
+
+  assert.equal(harness.restoreCount, 0);
 });
 
-test("leaves undo to focused editors such as the Google Docs event target", () => {
-  const docsEditor = element({
-    localName: "body",
-    isContentEditable: true,
-    getAttribute: (name) => (name === "role" ? "textbox" : null),
-  });
-  const event = keyEvent({
-    metaKey: true,
-    composedPath: () => [docsEditor],
-  });
+test("does not restore when native undo emits historyUndo", () => {
+  const harness = controllerHarness();
 
-  assert.equal(
-    pageShouldHandleUndo(event, documentWith({ activeElement: docsEditor })),
-    true,
+  harness.controller.handleKeydown(keyEvent({ metaKey: true }));
+  harness.controller.handleBeforeInput(beforeInputEvent());
+  harness.flush();
+
+  assert.equal(harness.restoreCount, 0);
+});
+
+test("restores after unrelated input when no undo occurred", () => {
+  const harness = controllerHarness();
+
+  harness.controller.handleKeydown(keyEvent({ metaKey: true }));
+  harness.controller.handleBeforeInput(
+    beforeInputEvent({ inputType: "insertText" }),
   );
+  harness.flush();
+
+  assert.equal(harness.restoreCount, 1);
 });
 
-test("leaves undo to a page that already handled the shortcut", () => {
-  assert.equal(
-    pageShouldHandleUndo(
-      keyEvent({ defaultPrevented: true }),
-      documentWith(),
-    ),
-    true,
+test("ignores synthetic shortcut and undo events created by websites", () => {
+  const syntheticShortcutHarness = controllerHarness();
+  syntheticShortcutHarness.controller.handleKeydown(
+    keyEvent({ isTrusted: false, metaKey: true }),
   );
-});
+  syntheticShortcutHarness.flush();
+  assert.equal(syntheticShortcutHarness.restoreCount, 0);
 
-test("allows tab restoration when the page has no undo context", () => {
-  const page = element({ localName: "body" });
-
-  assert.equal(
-    pageShouldHandleUndo(
-      keyEvent({ composedPath: () => [page] }),
-      documentWith({ activeElement: page }),
-    ),
-    false,
+  const syntheticUndoHarness = controllerHarness();
+  syntheticUndoHarness.controller.handleKeydown(
+    keyEvent({ metaKey: true }),
   );
-});
-
-test("ignores deprecated editor-command availability on a normal page", () => {
-  const page = element({ localName: "body" });
-
-  assert.equal(
-    pageShouldHandleUndo(
-      keyEvent({ composedPath: () => [page] }),
-      documentWith({
-        activeElement: page,
-        queryCommandEnabled: () => true,
-      }),
-    ),
-    false,
+  syntheticUndoHarness.controller.handleBeforeInput(
+    beforeInputEvent({ isTrusted: false }),
   );
+  syntheticUndoHarness.flush();
+  assert.equal(syntheticUndoHarness.restoreCount, 1);
 });
 
-test("preserves the original key event and skips restoration in an editor", () => {
-  const editor = element({ localName: "textarea" });
-  let prevented = false;
-  let stopped = false;
-  let restored = false;
-  const event = keyEvent({
-    metaKey: true,
-    composedPath: () => [editor],
-    preventDefault: () => {
-      prevented = true;
-    },
-    stopImmediatePropagation: () => {
-      stopped = true;
-    },
-  });
+test("leaves composing and held shortcuts entirely to the page", () => {
+  const harness = controllerHarness();
 
-  handleKeydown(event, {
-    currentDocument: documentWith({ activeElement: editor }),
-    platform: "macOS",
-    restore: () => {
-      restored = true;
-    },
-  });
-
-  assert.equal(prevented, false);
-  assert.equal(stopped, false);
-  assert.equal(restored, false);
-});
-
-test("consumes unused page undo and requests one tab restoration", () => {
-  const page = element({ localName: "body" });
-  let prevented = false;
-  let stopped = false;
-  let restoreCount = 0;
-  const event = keyEvent({
-    metaKey: true,
-    composedPath: () => [page],
-    preventDefault: () => {
-      prevented = true;
-    },
-    stopImmediatePropagation: () => {
-      stopped = true;
-    },
-  });
-
-  handleKeydown(event, {
-    currentDocument: documentWith({ activeElement: page }),
-    platform: "macOS",
-    restore: () => {
-      restoreCount += 1;
-    },
-  });
-
-  assert.equal(prevented, true);
-  assert.equal(stopped, true);
-  assert.equal(restoreCount, 1);
-});
-
-test("does not restore additional tabs for a held shortcut", () => {
-  const page = element({ localName: "body" });
-  let restoreCount = 0;
-
-  handleKeydown(
-    keyEvent({
-      metaKey: true,
-      repeat: true,
-      composedPath: () => [page],
-    }),
-    {
-      currentDocument: documentWith({ activeElement: page }),
-      platform: "macOS",
-      restore: () => {
-        restoreCount += 1;
-      },
-    },
+  harness.controller.handleKeydown(
+    keyEvent({ isComposing: true, metaKey: true }),
   );
+  harness.controller.handleKeydown(
+    keyEvent({ metaKey: true, repeat: true }),
+  );
+  harness.flush();
 
-  assert.equal(restoreCount, 0);
+  assert.equal(harness.restoreCount, 0);
+  assert.equal(harness.scheduledCount, 0);
 });

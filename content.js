@@ -4,29 +4,6 @@
   const RECOVERY_COMPLETE_MESSAGE = "cmdz-shortcut-listener-recovered";
   const RECOVERY_CHECK_INTERVAL_MS = 1000;
 
-  const NON_TEXT_INPUT_TYPES = new Set([
-    "button",
-    "checkbox",
-    "color",
-    "file",
-    "hidden",
-    "image",
-    "radio",
-    "range",
-    "reset",
-    "submit",
-  ]);
-
-  const EDITOR_ROLES = new Set([
-    "application",
-    "combobox",
-    "grid",
-    "searchbox",
-    "spinbutton",
-    "textbox",
-    "treegrid",
-  ]);
-
   function isMacPlatform(platform) {
     return /mac/i.test(platform || "");
   }
@@ -43,88 +20,6 @@
     return isMacPlatform(platform)
       ? event.metaKey && !event.ctrlKey
       : event.ctrlKey && !event.metaKey;
-  }
-
-  function isEditingElement(element) {
-    if (!element || element.nodeType !== 1) {
-      return false;
-    }
-
-    const tagName = element.localName?.toLowerCase();
-
-    if (tagName === "textarea" || tagName === "select") {
-      return !element.disabled && !element.readOnly;
-    }
-
-    if (tagName === "canvas") {
-      return true;
-    }
-
-    if (tagName === "input") {
-      const inputType = (element.type || "text").toLowerCase();
-      return (
-        !element.disabled &&
-        !element.readOnly &&
-        !NON_TEXT_INPUT_TYPES.has(inputType)
-      );
-    }
-
-    if (element.isContentEditable) {
-      return true;
-    }
-
-    const declaredShortcuts = element
-      .getAttribute?.("aria-keyshortcuts")
-      ?.toLowerCase()
-      .split(/\s+/);
-
-    if (
-      declaredShortcuts?.some((shortcut) =>
-        ["command+z", "control+z", "meta+z"].includes(shortcut),
-      )
-    ) {
-      return true;
-    }
-
-    const role = element.getAttribute?.("role")?.toLowerCase();
-    return EDITOR_ROLES.has(role);
-  }
-
-  function isInEditingSurface(element) {
-    let currentElement = element;
-
-    while (currentElement) {
-      if (isEditingElement(currentElement)) {
-        return true;
-      }
-
-      currentElement = currentElement.parentElement;
-    }
-
-    return false;
-  }
-
-  function pageShouldHandleUndo(event, currentDocument) {
-    if (event.defaultPrevented || event.isComposing) {
-      return true;
-    }
-
-    const eventPath =
-      typeof event.composedPath === "function" ? event.composedPath() : [];
-
-    if (eventPath.some(isInEditingSurface)) {
-      return true;
-    }
-
-    if (isInEditingSurface(currentDocument.activeElement)) {
-      return true;
-    }
-
-    if (currentDocument.designMode?.toLowerCase() === "on") {
-      return true;
-    }
-
-    return false;
   }
 
   function getPlatform() {
@@ -159,44 +54,64 @@
     }
   }
 
-  function handleKeydown(
-    event,
-    {
-      currentDocument = document,
-      platform = getPlatform(),
-      restore = requestTabRestore,
-      isActive = hasActiveExtensionContext,
-    } = {},
-  ) {
-    if (event.isTrusted === false || !isUndoShortcut(event, platform)) {
-      return;
-    }
+  function createShortcutController({
+    platform = getPlatform(),
+    restore = requestTabRestore,
+    schedule = (callback) => setTimeout(callback, 0),
+  } = {}) {
+    let pendingUndo = null;
 
-    if (pageShouldHandleUndo(event, currentDocument)) {
-      return;
-    }
-
-    if (event.repeat) {
-      if (!isActive()) {
+    function handleBeforeInput(event) {
+      if (
+        event.isTrusted === false ||
+        event.inputType !== "historyUndo" ||
+        !pendingUndo
+      ) {
         return;
       }
-    } else if (restore() === false) {
-      return;
+
+      pendingUndo.undoObserved = true;
     }
 
-    event.preventDefault();
-    event.stopImmediatePropagation();
+    function handleKeydown(event) {
+      if (
+        event.isTrusted === false ||
+        event.isComposing ||
+        event.repeat ||
+        !isUndoShortcut(event, platform)
+      ) {
+        return;
+      }
+
+      const pending = {
+        event,
+        undoObserved: false,
+      };
+      pendingUndo = pending;
+
+      schedule(() => {
+        if (pendingUndo === pending) {
+          pendingUndo = null;
+        }
+
+        if (!pending.undoObserved && !pending.event.defaultPrevented) {
+          restore();
+        }
+      });
+    }
+
+    return {
+      handleBeforeInput,
+      handleKeydown,
+    };
   }
 
   if (typeof module === "object" && module.exports) {
     module.exports = {
-      handleKeydown,
+      createShortcutController,
       hasActiveExtensionContext,
-      isEditingElement,
-      isInEditingSurface,
       isMacPlatform,
       isUndoShortcut,
-      pageShouldHandleUndo,
       requestTabRestore,
     };
   } else {
@@ -207,10 +122,22 @@
         "keydown",
         previousState.listener,
       );
+
+      if (previousState.beforeInputListener) {
+        previousState.target.removeEventListener(
+          "beforeinput",
+          previousState.beforeInputListener,
+          true,
+        );
+      }
+
       previousState.disposeRecovery();
     }
 
-    const listener = (event) => handleKeydown(event);
+    const controller = createShortcutController();
+    const listener = (event) => controller.handleKeydown(event);
+    const beforeInputListener = (event) =>
+      controller.handleBeforeInput(event);
     const recoveryUrl = chrome.runtime.getURL("recovery.html");
     const recoveryOrigin = new URL(recoveryUrl).origin;
     const ownsRecovery = window === window.top;
@@ -256,6 +183,7 @@
     };
 
     document.addEventListener("keydown", listener);
+    document.addEventListener("beforeinput", beforeInputListener, true);
 
     if (ownsRecovery) {
       recoveryTimer = setInterval(
@@ -266,6 +194,7 @@
     }
 
     globalThis[LISTENER_STATE] = {
+      beforeInputListener,
       disposeRecovery,
       listener,
       target: document,

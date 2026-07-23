@@ -137,11 +137,8 @@ function createUpgradeableExtensionDirectory() {
   );
   const legacyManifest = {
     ...manifest,
-    version: "1.0.2",
-    permissions: ["sessions"],
+    version: "1.0.3",
   };
-  delete legacyManifest.host_permissions;
-  delete legacyManifest.web_accessible_resources;
 
   fs.cpSync(
     path.join(projectDirectory, "icons"),
@@ -155,25 +152,27 @@ function createUpgradeableExtensionDirectory() {
   );
   fs.writeFileSync(
     path.join(extensionDirectory, "background.js"),
-    `chrome.runtime.onMessage.addListener((message) => {
-  if (message?.type !== "reopen-last-closed-tab") return;
-  chrome.sessions.getRecentlyClosed().then((sessions) => {
-    const session = sessions.find((entry) => entry.tab?.sessionId);
-    if (session) chrome.sessions.restore(session.tab.sessionId);
-  });
-});
-`,
+    fs.readFileSync(path.join(projectDirectory, "background.js")),
   );
   fs.writeFileSync(
     path.join(extensionDirectory, "content.js"),
-    `window.addEventListener("keydown", (event) => {
+    `document.addEventListener("keydown", (event) => {
   if (!event.metaKey || event.key.toLowerCase() !== "z") return;
-  if (event.target.matches("input, textarea, [contenteditable=true]")) return;
+  if (event.target.matches("input, textarea, [contenteditable=true], [role=application]")) return;
+  if (typeof chrome.runtime?.id !== "string") return;
   event.preventDefault();
   event.stopImmediatePropagation();
   chrome.runtime.sendMessage({ type: "reopen-last-closed-tab" });
 });
 `,
+  );
+  fs.copyFileSync(
+    path.join(projectDirectory, "recovery.html"),
+    path.join(extensionDirectory, "recovery.html"),
+  );
+  fs.copyFileSync(
+    path.join(projectDirectory, "recovery.js"),
+    path.join(extensionDirectory, "recovery.js"),
   );
 
   return extensionDirectory;
@@ -336,12 +335,40 @@ async function run() {
     await assertNoRestore(context, "native-input");
     assert.notEqual(await input.inputValue(), "draft");
 
+    await closeRestorableTab(context, origin, "empty-native-input");
+    await page.keyboard.press("Meta+z");
+    const emptyInputRestore = await waitForRestoredTab(
+      context,
+      "empty-native-input",
+    );
+    assert.ok(
+      emptyInputRestore,
+      "CmdZ did not restore a tab after the focused input exhausted its undo history",
+    );
+    await emptyInputRestore.close();
+
     await closeRestorableTab(context, origin, "contenteditable");
     const contenteditable = page.locator("#contenteditable");
     await contenteditable.focus();
     await contenteditable.pressSequentially(" draft");
     await page.keyboard.press("Meta+z");
     await assertNoRestore(context, "contenteditable");
+    assert.equal(
+      (await contenteditable.textContent()).includes("draft"),
+      false,
+    );
+
+    await closeRestorableTab(context, origin, "empty-contenteditable");
+    await page.keyboard.press("Meta+z");
+    const emptyContenteditableRestore = await waitForRestoredTab(
+      context,
+      "empty-contenteditable",
+    );
+    assert.ok(
+      emptyContenteditableRestore,
+      "CmdZ did not restore a tab after contenteditable exhausted its undo history",
+    );
+    await emptyContenteditableRestore.close();
 
     await closeRestorableTab(context, origin, "custom-application");
     await page.locator("#application").focus();

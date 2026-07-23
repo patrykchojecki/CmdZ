@@ -12,10 +12,10 @@ systems; its **Command + Z** behavior is inspired by Safari on macOS.
 CmdZ uses Chrome's `sessions` permission to request the browser's recently closed session list. Chrome may include session identifiers and browsing metadata such as tab titles and URLs in that response. CmdZ uses only the information necessary to identify the newest closed individual tab and ask Chrome to restore it.
 
 CmdZ also runs a small local shortcut listener on HTTP and HTTPS pages. When
-the user presses **Command + Z** or **Ctrl + Z**, the listener checks only the
-key and modifier state and whether the focused element is an editing surface.
-It does not read typed text, field values, document contents, or unrelated
-keystrokes.
+the user presses **Command + Z** or **Ctrl + Z**, the listener checks the
+trusted key and modifier state, whether the page prevented the shortcut, and
+whether Chrome emitted a `historyUndo` event. It does not read typed text,
+field values, document contents, focused elements, or unrelated keystrokes.
 
 ## Collection, storage, and sharing
 
@@ -41,11 +41,11 @@ update, or reload. CmdZ never downloads or executes remote code.
 
 CmdZ's shortcut listener runs on HTTP and HTTPS pages because a browser-scoped
 extension command would consume Undo before an editor such as Google Docs could
-receive it. The listener uses page access only to identify whether the focused
-element is editable. It does not inspect or modify text, field values, or
-document contents. A hidden extension-owned recovery frame may briefly load
-after CmdZ itself is reloaded; it can only request that the packaged listener
-be reattached to the same tab.
+receive it. The listener uses page access only to observe whether the trusted
+shortcut produced an Undo action or was handled by the page. It does not inspect
+or modify text, field values, focused elements, or document contents. A hidden
+extension-owned recovery frame may briefly load after CmdZ itself is reloaded;
+it can only request that the packaged listener be reattached to the same tab.
 
 ## Limited Use disclosure
 
