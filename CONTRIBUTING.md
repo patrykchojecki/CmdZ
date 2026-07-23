@@ -48,7 +48,7 @@ node --check content.js
 node --test tests/*.test.js
 python3 -m json.tool manifest.json >/dev/null
 ./scripts/package-extension.sh
-unzip -t dist/CmdZ-1.0.1.zip
+unzip -t dist/CmdZ-1.0.2.zip
 ```
 
 Then test the extension manually:

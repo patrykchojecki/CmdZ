@@ -43,7 +43,6 @@ function documentWith(properties = {}) {
   return {
     activeElement: null,
     designMode: "off",
-    queryCommandEnabled: () => false,
     ...properties,
   };
 }
@@ -159,6 +158,21 @@ test("allows tab restoration when the page has no undo context", () => {
     pageShouldHandleUndo(
       keyEvent({ composedPath: () => [page] }),
       documentWith({ activeElement: page }),
+    ),
+    false,
+  );
+});
+
+test("ignores deprecated editor-command availability on a normal page", () => {
+  const page = element({ localName: "body" });
+
+  assert.equal(
+    pageShouldHandleUndo(
+      keyEvent({ composedPath: () => [page] }),
+      documentWith({
+        activeElement: page,
+        queryCommandEnabled: () => true,
+      }),
     ),
     false,
   );

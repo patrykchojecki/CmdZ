@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "CmdZ",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Reopen closed tabs with Command+Z without overriding page undo.",
   "homepage_url": "https://github.com/patrykchojecki/CmdZ",
   "minimum_chrome_version": "96",

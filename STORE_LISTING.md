@@ -4,7 +4,7 @@ This file contains the copy, disclosures, assets, and final manual steps needed 
 
 ## Package
 
-Upload [`dist/CmdZ-1.0.1.zip`](dist/CmdZ-1.0.1.zip). The archive contains `manifest.json` at its root and only the files Chrome needs at runtime.
+Upload [`dist/CmdZ-1.0.2.zip`](dist/CmdZ-1.0.2.zip). The archive contains `manifest.json` at its root and only the files Chrome needs at runtime.
 
 ## Store Listing tab
 
@@ -143,7 +143,7 @@ cross-platform support, and Safari inspiration.
 1. Confirm that the Privacy Policy URL above loads publicly.
 2. Register or confirm the Chrome Web Store developer account.
 3. Enable 2-Step Verification on the publishing Google Account.
-4. In the Developer Dashboard, select **Add new item** and upload `dist/CmdZ-1.0.1.zip`.
+4. In the Developer Dashboard, select **Add new item** and upload `dist/CmdZ-1.0.2.zip`.
 5. Paste the Store Listing and Privacy practices content above.
 6. Upload the three required graphic assets.
 7. Confirm the developer contact email and complete email verification if prompted.

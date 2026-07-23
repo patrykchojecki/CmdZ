@@ -37,7 +37,7 @@ For now, install CmdZ locally in a few steps:
    git clone https://github.com/patrykchojecki/CmdZ.git
    ```
 
-   Alternatively, download [`dist/CmdZ-1.0.1.zip`](dist/CmdZ-1.0.1.zip) and extract it.
+   Alternatively, download [`dist/CmdZ-1.0.2.zip`](dist/CmdZ-1.0.2.zip) and extract it.
 
 2. Open `chrome://extensions` in Google Chrome.
 3. Enable **Developer mode** in the upper-right corner.
@@ -54,7 +54,7 @@ CmdZ leaves the shortcut untouched when:
 - a text input, text area, or editable element is focused;
 - the focused surface exposes an editor or application role;
 - the page has already handled the shortcut; or
-- Chrome reports that the current page has an Undo action available.
+- the document is explicitly in editing mode.
 
 Chrome does not allow content scripts on internal pages such as
 `chrome://extensions`. On those pages, click the CmdZ toolbar icon or use
@@ -121,7 +121,7 @@ node --check background.js
 node --check content.js
 node --test tests/*.test.js
 python3 -m json.tool manifest.json >/dev/null
-unzip -t dist/CmdZ-1.0.1.zip
+unzip -t dist/CmdZ-1.0.2.zip
 ```
 
 To rebuild the distributable archive from the repository root:

@@ -120,11 +120,7 @@ function pageShouldHandleUndo(event, currentDocument) {
     return true;
   }
 
-  try {
-    return currentDocument.queryCommandEnabled?.("undo") === true;
-  } catch {
-    return false;
-  }
+  return false;
 }
 
 function getPlatform() {
