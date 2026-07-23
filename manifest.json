@@ -1,22 +1,26 @@
 {
   "manifest_version": 3,
   "name": "CmdZ",
-  "version": "1.0.0",
-  "description": "Reopen the most recently closed tab with Command+Z.",
+  "version": "1.0.1",
+  "description": "Reopen closed tabs with Command+Z without overriding page undo.",
   "homepage_url": "https://github.com/patrykchojecki/CmdZ",
   "minimum_chrome_version": "96",
   "permissions": ["sessions"],
   "background": {
     "service_worker": "background.js"
   },
-  "commands": {
-    "reopen-last-closed-tab": {
-      "suggested_key": {
-        "mac": "Command+Z"
-      },
-      "description": "Reopen the most recently closed tab"
-    }
+  "action": {
+    "default_title": "Reopen the most recently closed tab"
   },
+  "content_scripts": [
+    {
+      "matches": ["http://*/*", "https://*/*"],
+      "js": ["content.js"],
+      "all_frames": true,
+      "match_about_blank": true,
+      "run_at": "document_idle"
+    }
+  ],
   "icons": {
     "16": "icons/icon-16.png",
     "32": "icons/icon-32.png",

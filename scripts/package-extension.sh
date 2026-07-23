@@ -13,6 +13,8 @@ if [ -z "$VERSION" ]; then
 fi
 
 node --check "$PROJECT_DIR/background.js"
+node --check "$PROJECT_DIR/content.js"
+node --test "$PROJECT_DIR/tests/"*.test.js
 python3 -m json.tool "$PROJECT_DIR/manifest.json" >/dev/null
 
 mkdir -p "$PROJECT_DIR/dist"
@@ -21,6 +23,7 @@ cd "$PROJECT_DIR"
 zip -FS "$ARCHIVE" \
   manifest.json \
   background.js \
+  content.js \
   icons/icon-16.png \
   icons/icon-32.png \
   icons/icon-48.png \

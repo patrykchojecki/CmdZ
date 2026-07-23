@@ -5,7 +5,7 @@
 <h1 align="center">CmdZ</h1>
 
 <p align="center">
-  Reopen your most recently closed Chrome tab with <kbd>Command</kbd> + <kbd>Z</kbd>.
+  Reopen your most recently closed Chrome tab with <kbd>Command</kbd> + <kbd>Z</kbd>—without breaking Undo.
 </p>
 
 CmdZ works in Google Chrome across desktop operating systems. Its name and
@@ -13,12 +13,19 @@ CmdZ works in Google Chrome across desktop operating systems. Its name and
 
 ## What it does
 
-CmdZ has one feature: invoke its keyboard shortcut to reopen your most recently
-closed individual tab in Chrome. On macOS, the suggested shortcut is
-<kbd>Command</kbd> + <kbd>Z</kbd>. On other operating systems, assign the key
-combination you prefer in Chrome's extension shortcut settings.
+CmdZ has one feature: press <kbd>Command</kbd> + <kbd>Z</kbd> on macOS or
+<kbd>Ctrl</kbd> + <kbd>Z</kbd> on Windows and Linux to reopen your most
+recently closed individual tab—unless the current page has something to undo.
 
-It stays lightweight by running only when invoked and requesting only the `sessions` permission. There is no popup, settings page, analytics, page access, network access, third-party dependency, or remotely hosted code.
+When an input, editor, or application-style editing surface is focused, CmdZ
+steps aside and the website receives its normal Undo shortcut. This includes
+editors such as Google Docs. You can also click the CmdZ toolbar icon to restore
+a tab directly.
+
+CmdZ requests only the `sessions` permission. A small local shortcut listener
+runs on web pages so it can distinguish page-level Undo from tab restoration.
+It does not read typed text or page contents. There is no popup, settings page,
+analytics, network access, third-party dependency, or remotely hosted code.
 
 ## Install
 
@@ -30,43 +37,48 @@ For now, install CmdZ locally in a few steps:
    git clone https://github.com/patrykchojecki/CmdZ.git
    ```
 
-   Alternatively, download [`dist/CmdZ-1.0.0.zip`](dist/CmdZ-1.0.0.zip) and extract it.
+   Alternatively, download [`dist/CmdZ-1.0.1.zip`](dist/CmdZ-1.0.1.zip) and extract it.
 
 2. Open `chrome://extensions` in Google Chrome.
 3. Enable **Developer mode** in the upper-right corner.
 4. Click **Load unpacked**.
 5. Select the repository folder, or the folder extracted from the release ZIP.
-6. Close a tab and invoke the CmdZ shortcut.
+6. Refresh any web page that was already open when CmdZ was installed.
+7. Close a tab and press <kbd>Command</kbd> + <kbd>Z</kbd> on macOS or
+   <kbd>Ctrl</kbd> + <kbd>Z</kbd> on Windows and Linux.
 
-### Shortcut troubleshooting
+### Undo safety
 
-Chrome suggests <kbd>Command</kbd> + <kbd>Z</kbd> on macOS. On other operating
-systems—or when that shortcut conflicts with another browser or extension
-command—you can assign a shortcut manually:
+CmdZ leaves the shortcut untouched when:
 
-1. Open `chrome://extensions/shortcuts`.
-2. Find **CmdZ**.
-3. Assign your preferred key combination to **Reopen the most recently closed tab**.
+- a text input, text area, or editable element is focused;
+- the focused surface exposes an editor or application role;
+- the page has already handled the shortcut; or
+- Chrome reports that the current page has an Undo action available.
 
-On macOS, <kbd>Command</kbd> + <kbd>Z</kbd> is also the standard Undo shortcut,
-so Chrome or editable page elements may take priority in some contexts.
+Chrome does not allow content scripts on internal pages such as
+`chrome://extensions`. On those pages, click the CmdZ toolbar icon or use
+Chrome's built-in reopen-tab shortcut.
 
 For bug reports and diagnostic details, see [Support](SUPPORT.md).
 
 ## How it works
 
-The manifest suggests <kbd>Command</kbd> + <kbd>Z</kbd> on macOS, echoing
-Safari's reopen-tab behavior. The extension itself is not macOS-specific and
-works in Chrome on other desktop operating systems with a shortcut assigned in
-`chrome://extensions/shortcuts`. When invoked, the service worker asks Chrome
-for recently closed sessions, finds the newest individual tab, and restores it
-by session ID.
+CmdZ listens for the platform's normal Undo shortcut inside each web page. If
+the event belongs to an editing context, CmdZ does nothing and the original,
+trusted keyboard event continues to the page. Otherwise, it prevents the unused
+page-level shortcut and asks the service worker to restore the newest closed
+individual tab by session ID.
 
 CmdZ requires Chrome 96 or newer and uses only official Chrome extension APIs.
 
 ## Privacy
 
-CmdZ does not collect, store, or transmit data. The `sessions` permission is required solely to identify and restore recently closed tabs. The extension has no host permissions and cannot read page content. See the full [Privacy Policy](PRIVACY.md).
+CmdZ does not collect, store, or transmit data. The `sessions` permission is
+required solely to identify and restore recently closed tabs. Its page-level
+listener checks only the Undo key event and whether the focused element is
+editable; it does not read text, field values, or page contents. See the full
+[Privacy Policy](PRIVACY.md).
 
 ## Chrome Web Store
 
@@ -83,11 +95,13 @@ Please report suspected vulnerabilities privately as described in the [Security 
 ```text
 CmdZ/
 ├── .github/            # Issue forms and pull request template
-├── background.js       # Keyboard command and tab restoration logic
+├── background.js       # Tab restoration logic
+├── content.js          # Undo-safe page shortcut handling
 ├── manifest.json       # Manifest V3 configuration
 ├── icons/              # Source and Chrome extension icons
 ├── store-assets/       # Chrome Web Store listing graphics
 ├── scripts/            # Release packaging script
+├── tests/              # Shortcut policy tests
 ├── CODE_OF_CONDUCT.md  # Community participation standards
 ├── CONTRIBUTING.md     # Contribution and development guide
 ├── SECURITY.md         # Private vulnerability reporting policy
@@ -104,8 +118,10 @@ Run the basic validation checks with:
 
 ```sh
 node --check background.js
+node --check content.js
+node --test tests/*.test.js
 python3 -m json.tool manifest.json >/dev/null
-unzip -t dist/CmdZ-1.0.0.zip
+unzip -t dist/CmdZ-1.0.1.zip
 ```
 
 To rebuild the distributable archive from the repository root:

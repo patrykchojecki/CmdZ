@@ -1,18 +1,23 @@
 # CmdZ Support
 
-## Shortcut not working
+## Undo opens a tab instead
 
-CmdZ works in Chrome across desktop operating systems. It suggests
-**Command + Z** on macOS, inspired by Safari's reopen-tab shortcut. On other operating
-systems, or when the suggested shortcut conflicts with another command, assign
-a shortcut manually:
+CmdZ 1.0.1 and newer leave **Command + Z** or **Ctrl + Z** untouched when an
+input, editor, or application-style editing surface is focused. Google Docs and
+other web editors should therefore keep their normal Undo behavior.
 
-1. Open `chrome://extensions/shortcuts`.
-2. Find **CmdZ**.
-3. Assign your preferred key combination to **Reopen the most recently closed tab**.
+If Undo still opens a tab:
 
-On macOS, Chrome or editable page elements may still take priority because
-**Command + Z** is the standard Undo shortcut.
+1. Open `chrome://extensions` and confirm that CmdZ is version 1.0.1 or newer.
+2. Click **Reload** on the CmdZ extension card if you installed it from source.
+3. Refresh the affected editor tab so Chrome loads the updated shortcut listener.
+4. Try Undo again with focus inside the editor.
+
+## Closed tab does not reopen
+
+Refresh web pages that were already open when CmdZ was installed or reloaded.
+Chrome does not allow the page-level listener on internal pages such as
+`chrome://extensions`; use the CmdZ toolbar icon on those pages.
 
 ## Report a problem
 
@@ -20,7 +25,9 @@ On macOS, Chrome or editable page elements may still take priority because
 
 - your operating system and version;
 - your Chrome version;
-- whether the shortcut appears in `chrome://extensions/shortcuts`; and
+- your CmdZ version;
+- the website and type of focused editor, without including private document
+  content; and
 - the steps needed to reproduce the problem.
 
 CmdZ supports Google Chrome 96 or newer on desktop operating systems.

@@ -4,7 +4,7 @@ This file contains the copy, disclosures, assets, and final manual steps needed 
 
 ## Package
 
-Upload [`dist/CmdZ-1.0.0.zip`](dist/CmdZ-1.0.0.zip). The archive contains `manifest.json` at its root and only the files Chrome needs at runtime.
+Upload [`dist/CmdZ-1.0.1.zip`](dist/CmdZ-1.0.1.zip). The archive contains `manifest.json` at its root and only the files Chrome needs at runtime.
 
 ## Store Listing tab
 
@@ -16,27 +16,28 @@ Upload [`dist/CmdZ-1.0.0.zip`](dist/CmdZ-1.0.0.zip). The archive contains `manif
 CmdZ
 ```
 
-**Summary** — sourced from `manifest.json`; 51 of 132 characters
+**Summary** — sourced from `manifest.json`; 63 of 132 characters
 
 ```text
-Reopen the most recently closed tab with Command+Z.
+Reopen closed tabs with Command+Z without overriding page undo.
 ```
 
 **Detailed description**
 
 ```text
-Recover the last tab you closed in Chrome on any desktop operating system.
+Recover the last tab you closed in Chrome without sacrificing Undo on a website.
 
-CmdZ is a focused keyboard utility that adds one shortcut and stays out of the way. Its suggested Command+Z shortcut is inspired by Safari on macOS; on other operating systems, assign the key combination you prefer in Chrome's extension shortcut settings.
+Press Command+Z on macOS or Ctrl+Z on Windows and Linux. When an input, editor, or application-style editing surface is focused, CmdZ steps aside so the website receives its normal Undo shortcut. Otherwise, CmdZ restores your most recently closed individual tab.
+
+The Command+Z behavior is inspired by Safari on macOS. A toolbar button is also available for direct tab restoration.
 
 - Reopens the most recently closed individual tab
-- Runs only when the shortcut is invoked
-- No tracking, ads, accounts, page access, or network requests
+- Preserves Undo in Google Docs and other web editors
+- Never reads typed text, field values, or page contents
+- No tracking, ads, accounts, or network requests
 - No popup, configuration, or third-party dependencies
 
-Suggested macOS shortcut: Command+Z
-
-On other operating systems, or if Chrome does not assign the shortcut automatically, open chrome://extensions/shortcuts and assign your preferred shortcut to CmdZ.
+Chrome does not allow the page-level shortcut listener on internal chrome:// pages. Use the CmdZ toolbar button on those pages.
 ```
 
 **Category**
@@ -90,13 +91,19 @@ https://github.com/patrykchojecki/CmdZ/issues
 **Single purpose description**
 
 ```text
-CmdZ lets Chrome users on desktop operating systems reopen their most recently closed individual tab with a keyboard shortcut. It suggests Command+Z on macOS, inspired by Safari's reopen-tab behavior.
+CmdZ lets Chrome users reopen their most recently closed individual tab with the platform's Undo shortcut when the current page has no editing action to undo.
 ```
 
 **`sessions` permission justification**
 
 ```text
 The sessions permission is required to request Chrome's recently closed sessions, identify the newest entry that represents an individual tab, and restore that tab. Session metadata is processed transiently on the user's device and is never stored or transmitted.
+```
+
+**Site access justification**
+
+```text
+CmdZ runs a small local shortcut listener on HTTP and HTTPS pages so it can leave Command+Z or Ctrl+Z untouched when an editor has something to undo. This page-level handling is necessary because a browser-scoped extension command would consume the shortcut before editors such as Google Docs receive it. The listener checks only the shortcut key state and whether the focused element is editable. It never reads typed text, field values, or document contents, and it stores or transmits nothing.
 ```
 
 **Remote code**
@@ -108,6 +115,8 @@ No, I am not using remote code.
 **Data usage disclosure**
 
 - Select **Web history** because Chrome's sessions API may supply metadata about recently closed tabs, even though CmdZ processes it only locally and transiently.
+- Do not select an additional category for the local shortcut check; it does not
+  collect typed text, page contents, or unrelated keyboard activity.
 - Do not select other data categories.
 - Certify that data is not sold to third parties.
 - Certify that data is not used or transferred for purposes unrelated to CmdZ's single purpose.
@@ -126,16 +135,15 @@ Recommended initial settings:
 - Visibility: **Public**
 - Regions: **All regions**
 
-The listing and screenshots clearly explain that CmdZ works across desktop
-operating systems while the suggested Command+Z shortcut is macOS-specific and
-inspired by Safari.
+The listing and screenshots clearly explain the context-aware shortcut behavior,
+cross-platform support, and Safari inspiration.
 
 ## Final dashboard steps
 
 1. Confirm that the Privacy Policy URL above loads publicly.
 2. Register or confirm the Chrome Web Store developer account.
 3. Enable 2-Step Verification on the publishing Google Account.
-4. In the Developer Dashboard, select **Add new item** and upload `dist/CmdZ-1.0.0.zip`.
+4. In the Developer Dashboard, select **Add new item** and upload `dist/CmdZ-1.0.1.zip`.
 5. Paste the Store Listing and Privacy practices content above.
 6. Upload the three required graphic assets.
 7. Confirm the developer contact email and complete email verification if prompted.

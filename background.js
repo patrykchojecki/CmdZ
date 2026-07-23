@@ -1,4 +1,4 @@
-const REOPEN_COMMAND = "reopen-last-closed-tab";
+const REOPEN_MESSAGE = "reopen-last-closed-tab";
 
 async function reopenLastClosedTab() {
   const sessions = await chrome.sessions.getRecentlyClosed();
@@ -9,10 +9,16 @@ async function reopenLastClosedTab() {
   }
 }
 
-chrome.commands.onCommand.addListener((command) => {
-  if (command === REOPEN_COMMAND) {
+chrome.runtime.onMessage.addListener((message) => {
+  if (message?.type === REOPEN_MESSAGE) {
     reopenLastClosedTab().catch(() => {
       // There may be no restorable tab yet. Nothing else is needed.
     });
   }
+});
+
+chrome.action.onClicked.addListener(() => {
+  reopenLastClosedTab().catch(() => {
+    // There may be no restorable tab yet. Nothing else is needed.
+  });
 });
