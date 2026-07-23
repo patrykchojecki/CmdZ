@@ -4,7 +4,7 @@ This file contains the copy, disclosures, assets, and final manual steps needed 
 
 ## Package
 
-Upload [`dist/CmdZ-1.0.2.zip`](dist/CmdZ-1.0.2.zip). The archive contains `manifest.json` at its root and only the files Chrome needs at runtime.
+Upload [`dist/CmdZ-1.0.3.zip`](dist/CmdZ-1.0.3.zip). The archive contains `manifest.json` at its root and only the files Chrome needs at runtime.
 
 ## Store Listing tab
 
@@ -100,10 +100,16 @@ CmdZ lets Chrome users reopen their most recently closed individual tab with the
 The sessions permission is required to request Chrome's recently closed sessions, identify the newest entry that represents an individual tab, and restore that tab. Session metadata is processed transiently on the user's device and is never stored or transmitted.
 ```
 
+**`scripting` permission justification**
+
+```text
+The scripting permission lets CmdZ attach its packaged shortcut listener to HTTP and HTTPS pages that were already open when the extension was installed, updated, or reloaded. It executes only content.js bundled in the reviewed extension package and never downloads or executes remote code.
+```
+
 **Site access justification**
 
 ```text
-CmdZ runs a small local shortcut listener on HTTP and HTTPS pages so it can leave Command+Z or Ctrl+Z untouched when an editor has something to undo. This page-level handling is necessary because a browser-scoped extension command would consume the shortcut before editors such as Google Docs receive it. The listener checks only the shortcut key state and whether the focused element is editable. It never reads typed text, field values, or document contents, and it stores or transmits nothing.
+CmdZ runs a small local shortcut listener on HTTP and HTTPS pages so it can leave Command+Z or Ctrl+Z untouched when an editor has something to undo. This page-level handling is necessary because a browser-scoped extension command would consume the shortcut before editors such as Google Docs receive it. The listener checks only trusted Undo shortcut events and whether the focused element is editable. It never reads typed text, field values, or document contents, and it stores or transmits nothing. Site access also lets CmdZ reattach the packaged listener to pages that remain open across extension updates or reloads.
 ```
 
 **Remote code**
@@ -143,7 +149,7 @@ cross-platform support, and Safari inspiration.
 1. Confirm that the Privacy Policy URL above loads publicly.
 2. Register or confirm the Chrome Web Store developer account.
 3. Enable 2-Step Verification on the publishing Google Account.
-4. In the Developer Dashboard, select **Add new item** and upload `dist/CmdZ-1.0.2.zip`.
+4. In the Developer Dashboard, select **Add new item** and upload `dist/CmdZ-1.0.3.zip`.
 5. Paste the Store Listing and Privacy practices content above.
 6. Upload the three required graphic assets.
 7. Confirm the developer contact email and complete email verification if prompted.

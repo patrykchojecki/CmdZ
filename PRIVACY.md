@@ -35,11 +35,17 @@ Because no user data is retained, there is no stored user data to access, export
 The `sessions` permission is the narrowest Chrome permission that can restore a
 recently closed tab.
 
+The `scripting` permission and HTTP/HTTPS site access let CmdZ attach or
+reattach its packaged shortcut listener to open pages after installation,
+update, or reload. CmdZ never downloads or executes remote code.
+
 CmdZ's shortcut listener runs on HTTP and HTTPS pages because a browser-scoped
 extension command would consume Undo before an editor such as Google Docs could
 receive it. The listener uses page access only to identify whether the focused
 element is editable. It does not inspect or modify text, field values, or
-document contents.
+document contents. A hidden extension-owned recovery frame may briefly load
+after CmdZ itself is reloaded; it can only request that the packaged listener
+be reattached to the same tab.
 
 ## Limited Use disclosure
 

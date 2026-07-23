@@ -22,6 +22,20 @@ test("loads the undo-safe listener in web pages and editable child frames", () =
   ]);
 });
 
+test("can reattach the listener after an extension reload", () => {
+  assert.deepEqual(manifest.permissions, ["sessions", "scripting"]);
+  assert.deepEqual(manifest.host_permissions, [
+    "http://*/*",
+    "https://*/*",
+  ]);
+  assert.deepEqual(manifest.web_accessible_resources, [
+    {
+      resources: ["recovery.html"],
+      matches: ["http://*/*", "https://*/*"],
+    },
+  ]);
+});
+
 test("provides a toolbar fallback where content scripts cannot run", () => {
   assert.equal(
     manifest.action.default_title,

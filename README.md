@@ -22,10 +22,12 @@ steps aside and the website receives its normal Undo shortcut. This includes
 editors such as Google Docs. You can also click the CmdZ toolbar icon to restore
 a tab directly.
 
-CmdZ requests only the `sessions` permission. A small local shortcut listener
-runs on web pages so it can distinguish page-level Undo from tab restoration.
-It does not read typed text or page contents. There is no popup, settings page,
-analytics, network access, third-party dependency, or remotely hosted code.
+CmdZ uses the `sessions` permission to restore tabs and the `scripting`
+permission to attach its small local shortcut listener to web pages, including
+pages that were already open when the extension was installed or reloaded. The
+listener distinguishes page-level Undo from tab restoration; it does not read
+typed text or page contents. There is no popup, settings page, analytics,
+network access, third-party dependency, or remotely hosted code.
 
 ## Install
 
@@ -37,14 +39,13 @@ For now, install CmdZ locally in a few steps:
    git clone https://github.com/patrykchojecki/CmdZ.git
    ```
 
-   Alternatively, download [`dist/CmdZ-1.0.2.zip`](dist/CmdZ-1.0.2.zip) and extract it.
+   Alternatively, download [`dist/CmdZ-1.0.3.zip`](dist/CmdZ-1.0.3.zip) and extract it.
 
 2. Open `chrome://extensions` in Google Chrome.
 3. Enable **Developer mode** in the upper-right corner.
 4. Click **Load unpacked**.
 5. Select the repository folder, or the folder extracted from the release ZIP.
-6. Refresh any web page that was already open when CmdZ was installed.
-7. Close a tab and press <kbd>Command</kbd> + <kbd>Z</kbd> on macOS or
+6. Close a tab and press <kbd>Command</kbd> + <kbd>Z</kbd> on macOS or
    <kbd>Ctrl</kbd> + <kbd>Z</kbd> on Windows and Linux.
 
 ### Undo safety
@@ -68,7 +69,8 @@ CmdZ listens for the platform's normal Undo shortcut inside each web page. If
 the event belongs to an editing context, CmdZ does nothing and the original,
 trusted keyboard event continues to the page. Otherwise, it prevents the unused
 page-level shortcut and asks the service worker to restore the newest closed
-individual tab by session ID.
+individual tab by session ID. The listener automatically reattaches to open
+pages after an extension update or reload.
 
 CmdZ requires Chrome 96 or newer and uses only official Chrome extension APIs.
 
@@ -97,6 +99,7 @@ CmdZ/
 ├── .github/            # Issue forms and pull request template
 ├── background.js       # Tab restoration logic
 ├── content.js          # Undo-safe page shortcut handling
+├── recovery.*          # Reattaches the listener after extension reloads
 ├── manifest.json       # Manifest V3 configuration
 ├── icons/              # Source and Chrome extension icons
 ├── store-assets/       # Chrome Web Store listing graphics
@@ -119,9 +122,10 @@ Run the basic validation checks with:
 ```sh
 node --check background.js
 node --check content.js
+node --check recovery.js
 node --test tests/*.test.js
 python3 -m json.tool manifest.json >/dev/null
-unzip -t dist/CmdZ-1.0.2.zip
+unzip -t dist/CmdZ-1.0.3.zip
 ```
 
 To rebuild the distributable archive from the repository root:

@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>CmdZ runtime test</title>
+  </head>
+  <body tabindex="0">
+    <h1>CmdZ runtime test</h1>
+
+    <label>
+      Native input
+      <input id="native-input">
+    </label>
+
+    <div id="contenteditable" contenteditable="true" role="textbox">
+      Editable text
+    </div>
+
+    <div id="application" role="application" tabindex="0">
+      Custom application
+    </div>
+
+    <iframe
+      id="docs-frame"
+      title="Google Docs-style editable frame"
+      srcdoc="<!doctype html><html><body contenteditable='true' role='textbox'>Frame text</body></html>"
+    ></iframe>
+
+    <script>
+      window.applicationUndoCount = 0;
+      window.shortcutEvents = [];
+
+      window.addEventListener(
+        "keydown",
+        (event) => {
+          if (event.key.toLowerCase() === "z" && event.metaKey) {
+            window.shortcutEvents.push({
+              defaultPrevented: event.defaultPrevented,
+              target: event.target.id || event.target.localName,
+            });
+          }
+        },
+        true
+      );
+
+      document
+        .getElementById("application")
+        .addEventListener("keydown", (event) => {
+          if (
+            event.key.toLowerCase() === "z" &&
+            event.metaKey &&
+            !event.altKey &&
+            !event.ctrlKey &&
+            !event.shiftKey
+          ) {
+            event.preventDefault();
+            window.applicationUndoCount += 1;
+          }
+        });
+    </script>
+  </body>
+</html>

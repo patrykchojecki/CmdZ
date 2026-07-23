@@ -31,6 +31,7 @@ function keyEvent(properties = {}) {
     metaKey: false,
     defaultPrevented: false,
     isComposing: false,
+    isTrusted: true,
     repeat: false,
     composedPath: () => [],
     preventDefault: () => {},
@@ -79,6 +80,28 @@ test("does not treat modified or unrelated shortcuts as undo", () => {
     isUndoShortcut(keyEvent({ key: "x", metaKey: true }), "macOS"),
     false,
   );
+});
+
+test("ignores synthetic shortcut events created by websites", () => {
+  const page = element({ localName: "body" });
+  let restored = false;
+
+  handleKeydown(
+    keyEvent({
+      isTrusted: false,
+      metaKey: true,
+      composedPath: () => [page],
+    }),
+    {
+      currentDocument: documentWith({ activeElement: page }),
+      platform: "macOS",
+      restore: () => {
+        restored = true;
+      },
+    },
+  );
+
+  assert.equal(restored, false);
 });
 
 test("recognizes native and ARIA editing elements", () => {

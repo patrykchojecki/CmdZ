@@ -14,6 +14,7 @@ fi
 
 node --check "$PROJECT_DIR/background.js"
 node --check "$PROJECT_DIR/content.js"
+node --check "$PROJECT_DIR/recovery.js"
 node --test "$PROJECT_DIR/tests/"*.test.js
 python3 -m json.tool "$PROJECT_DIR/manifest.json" >/dev/null
 
@@ -24,6 +25,8 @@ zip -FS "$ARCHIVE" \
   manifest.json \
   background.js \
   content.js \
+  recovery.html \
+  recovery.js \
   icons/icon-16.png \
   icons/icon-32.png \
   icons/icon-48.png \

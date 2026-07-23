@@ -21,7 +21,6 @@ CmdZ has no dependencies and no build step.
 3. Enable **Developer mode**.
 4. Click **Load unpacked** and select the repository folder.
 5. After editing the extension, click **Reload** on CmdZ's extension card.
-6. Refresh open web pages so Chrome reloads `content.js`.
 
 CmdZ handles **Command + Z** on macOS and **Ctrl + Z** on Windows and Linux
 inside web pages. Do not register these combinations through `chrome.commands`;
@@ -35,7 +34,8 @@ Changes should preserve the project's small footprint and privacy guarantees:
 - no remotely hosted code or third-party runtime dependencies;
 - no reading or modification of text, field values, or page contents;
 - limit the page-level listener to shortcut and editability checks;
-- only the minimum Chrome permission needed to restore a closed tab; and
+- only the minimum Chrome permissions needed to restore tabs and keep the
+  page listener attached after extension reloads; and
 - no popup or settings page unless a future requirement clearly justifies one.
 
 ## Validate your change
@@ -45,15 +45,16 @@ Run the basic checks from the repository root:
 ```sh
 node --check background.js
 node --check content.js
+node --check recovery.js
 node --test tests/*.test.js
 python3 -m json.tool manifest.json >/dev/null
 ./scripts/package-extension.sh
-unzip -t dist/CmdZ-1.0.2.zip
+unzip -t dist/CmdZ-1.0.3.zip
 ```
 
 Then test the extension manually:
 
-1. Reload CmdZ at `chrome://extensions`, then refresh the test page.
+1. Reload CmdZ at `chrome://extensions` while leaving the test page open.
 2. Type in an input, press Undo, and confirm that the text change is undone
    without reopening a tab.
 3. Repeat the Undo check in a content-editable or application-style editor.
@@ -61,6 +62,8 @@ Then test the extension manually:
    platform's Undo shortcut.
 5. Confirm that the most recently closed individual tab reopens.
 6. Confirm that clicking the toolbar icon also restores a closed tab.
+7. Return to the page that stayed open during the extension reload and confirm
+   that the shortcut still works without refreshing it.
 
 ## Pull requests
 
