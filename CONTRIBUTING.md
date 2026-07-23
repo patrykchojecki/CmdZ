@@ -1,6 +1,9 @@
 # Contributing to CmdZ
 
-Thanks for helping improve CmdZ. The project intentionally does one thing: it reopens the most recently closed Chrome tab when you press **Command + Z** on macOS.
+Thanks for helping improve CmdZ. The project intentionally does one thing: it
+reopens the most recently closed Chrome tab when you invoke its keyboard
+shortcut. CmdZ works across desktop operating systems; its suggested
+**Command + Z** shortcut is inspired by Safari on macOS.
 
 ## Before you start
 
@@ -19,7 +22,9 @@ CmdZ has no dependencies and no build step.
 4. Click **Load unpacked** and select the repository folder.
 5. After editing the extension, click **Reload** on CmdZ's extension card.
 
-Chrome may not assign **Command + Z** automatically if another shortcut conflicts. Check `chrome://extensions/shortcuts` before reporting shortcut behavior.
+Chrome suggests **Command + Z** only on macOS and may leave it unassigned if
+another shortcut conflicts. On other operating systems, assign a shortcut in
+`chrome://extensions/shortcuts` before testing or reporting shortcut behavior.
 
 ## Project principles
 
@@ -46,7 +51,7 @@ Then test the extension manually:
 
 1. Reload CmdZ at `chrome://extensions`.
 2. Open and close a tab.
-3. Press **Command + Z**.
+3. Invoke the shortcut assigned to CmdZ.
 4. Confirm that the most recently closed individual tab reopens.
 
 ## Pull requests

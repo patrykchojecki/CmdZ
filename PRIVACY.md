@@ -2,7 +2,10 @@
 
 Effective date: July 22, 2026
 
-CmdZ is a Chrome extension whose single purpose is to reopen the most recently closed individual tab when a user presses **Command + Z** on macOS.
+CmdZ is a Chrome extension whose single purpose is to reopen the most recently
+closed individual tab when a user invokes its keyboard shortcut. The extension
+works across desktop operating systems; it suggests **Command + Z** on macOS,
+inspired by Safari's reopen-tab shortcut.
 
 ## Data handled
 

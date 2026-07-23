@@ -25,18 +25,18 @@ Reopen the most recently closed tab with Command+Z.
 **Detailed description**
 
 ```text
-Use Command+Z to recover the last tab you closed in Chrome on macOS.
+Recover the last tab you closed in Chrome on any desktop operating system.
 
-CmdZ is a focused keyboard utility for people who prefer Command+Z for tab recovery. It adds one shortcut and stays out of the way.
+CmdZ is a focused keyboard utility that adds one shortcut and stays out of the way. Its suggested Command+Z shortcut is inspired by Safari on macOS; on other operating systems, assign the key combination you prefer in Chrome's extension shortcut settings.
 
 - Reopens the most recently closed individual tab
 - Runs only when the shortcut is invoked
 - No tracking, ads, accounts, page access, or network requests
 - No popup, configuration, or third-party dependencies
 
-Shortcut: Command+Z
+Suggested macOS shortcut: Command+Z
 
-If Chrome does not assign the shortcut automatically, open chrome://extensions/shortcuts and assign Command+Z to CmdZ.
+On other operating systems, or if Chrome does not assign the shortcut automatically, open chrome://extensions/shortcuts and assign your preferred shortcut to CmdZ.
 ```
 
 **Category**
@@ -90,7 +90,7 @@ https://github.com/patrykchojecki/CmdZ/issues
 **Single purpose description**
 
 ```text
-CmdZ lets macOS users reopen their most recently closed individual Chrome tab by pressing Command+Z.
+CmdZ lets Chrome users on desktop operating systems reopen their most recently closed individual tab with a keyboard shortcut. It suggests Command+Z on macOS, inspired by Safari's reopen-tab behavior.
 ```
 
 **`sessions` permission justification**
@@ -126,7 +126,9 @@ Recommended initial settings:
 - Visibility: **Public**
 - Regions: **All regions**
 
-The listing and screenshots clearly identify CmdZ as a macOS extension because the declared shortcut is macOS-specific.
+The listing and screenshots clearly explain that CmdZ works across desktop
+operating systems while the suggested Command+Z shortcut is macOS-specific and
+inspired by Safari.
 
 ## Final dashboard steps
 

@@ -8,11 +8,15 @@
   Reopen your most recently closed Chrome tab with <kbd>Command</kbd> + <kbd>Z</kbd>.
 </p>
 
-CmdZ brings Safari's familiar reopen-tab shortcut to Google Chrome on macOS.
+CmdZ works in Google Chrome across desktop operating systems. Its name and
+<kbd>Command</kbd> + <kbd>Z</kbd> shortcut are inspired by Safari on macOS.
 
 ## What it does
 
-CmdZ has one feature: press <kbd>Command</kbd> + <kbd>Z</kbd> to reopen your most recently closed individual tab in Chrome. That is the extension's entire purpose.
+CmdZ has one feature: invoke its keyboard shortcut to reopen your most recently
+closed individual tab in Chrome. On macOS, the suggested shortcut is
+<kbd>Command</kbd> + <kbd>Z</kbd>. On other operating systems, assign the key
+combination you prefer in Chrome's extension shortcut settings.
 
 It stays lightweight by running only when invoked and requesting only the `sessions` permission. There is no popup, settings page, analytics, page access, network access, third-party dependency, or remotely hosted code.
 
@@ -32,23 +36,31 @@ For now, install CmdZ locally in a few steps:
 3. Enable **Developer mode** in the upper-right corner.
 4. Click **Load unpacked**.
 5. Select the repository folder, or the folder extracted from the release ZIP.
-6. Close a tab and press <kbd>Command</kbd> + <kbd>Z</kbd>.
+6. Close a tab and invoke the CmdZ shortcut.
 
 ### Shortcut troubleshooting
 
-Chrome can leave a suggested shortcut unassigned when it conflicts with another browser or extension command. If CmdZ does not respond:
+Chrome suggests <kbd>Command</kbd> + <kbd>Z</kbd> on macOS. On other operating
+systems—or when that shortcut conflicts with another browser or extension
+command—you can assign a shortcut manually:
 
 1. Open `chrome://extensions/shortcuts`.
 2. Find **CmdZ**.
-3. Assign <kbd>Command</kbd> + <kbd>Z</kbd> to **Reopen the most recently closed tab**.
+3. Assign your preferred key combination to **Reopen the most recently closed tab**.
 
-Because <kbd>Command</kbd> + <kbd>Z</kbd> is also the standard Undo shortcut, Chrome or editable page elements may take priority in some contexts.
+On macOS, <kbd>Command</kbd> + <kbd>Z</kbd> is also the standard Undo shortcut,
+so Chrome or editable page elements may take priority in some contexts.
 
 For bug reports and diagnostic details, see [Support](SUPPORT.md).
 
 ## How it works
 
-The manifest registers a macOS keyboard command. When invoked, the service worker asks Chrome for recently closed sessions, finds the newest individual tab, and restores it by session ID.
+The manifest suggests <kbd>Command</kbd> + <kbd>Z</kbd> on macOS, echoing
+Safari's reopen-tab behavior. The extension itself is not macOS-specific and
+works in Chrome on other desktop operating systems with a shortcut assigned in
+`chrome://extensions/shortcuts`. When invoked, the service worker asks Chrome
+for recently closed sessions, finds the newest individual tab, and restores it
+by session ID.
 
 CmdZ requires Chrome 96 or newer and uses only official Chrome extension APIs.
 
