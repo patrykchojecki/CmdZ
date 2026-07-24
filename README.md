@@ -8,7 +8,7 @@
   Reopen your most recently closed Chrome tab with <kbd>Command</kbd> + <kbd>Z</kbd>—without breaking Undo.
 </p>
 
-CmdZ works in Google Chrome across desktop operating systems. Its name and
+CmdZ works in Google Chrome and other Chromium-powered browsers across desktop operating systems. Its name and
 <kbd>Command</kbd> + <kbd>Z</kbd> shortcut are inspired by Safari on macOS.
 
 ## What it does
@@ -106,48 +106,6 @@ CmdZ is not currently available in the Chrome Web Store because I have chosen no
 Contributions are welcome when they preserve CmdZ's focused purpose and minimal permissions. Read the [contribution guide](CONTRIBUTING.md) before opening an issue or pull request, and follow the project's [Code of Conduct](CODE_OF_CONDUCT.md).
 
 Please report suspected vulnerabilities privately as described in the [Security Policy](SECURITY.md).
-
-## Project structure
-
-```text
-CmdZ/
-├── .github/            # Issue forms and pull request template
-├── background.js       # Tab restoration logic
-├── content.js          # Undo-safe page shortcut handling
-├── recovery.*          # Reattaches the listener after extension reloads
-├── manifest.json       # Manifest V3 configuration
-├── icons/              # Source and Chrome extension icons
-├── store-assets/       # Chrome Web Store listing graphics
-├── scripts/            # Release packaging script
-├── tests/              # Shortcut policy tests
-├── CODE_OF_CONDUCT.md  # Community participation standards
-├── CONTRIBUTING.md     # Contribution and development guide
-├── SECURITY.md         # Private vulnerability reporting policy
-├── PRIVACY.md          # Public privacy policy
-├── STORE_LISTING.md    # Dashboard copy and submission checklist
-└── dist/               # Ready-to-upload extension package
-```
-
-## Development
-
-There is no build step and no dependency installation. Edit the source files, then click **Reload** for CmdZ on `chrome://extensions`.
-
-Run the basic validation checks with:
-
-```sh
-node --check background.js
-node --check content.js
-node --check recovery.js
-node --test tests/*.test.js
-python3 -m json.tool manifest.json >/dev/null
-unzip -t dist/CmdZ-1.0.5.zip
-```
-
-To rebuild the distributable archive from the repository root:
-
-```sh
-./scripts/package-extension.sh
-```
 
 ## License
 
