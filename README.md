@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="icons/icon-128.png" width="96" height="96" alt="CmdZ icon">
+  <img src="icons/icon.svg" width="96" height="96" alt="CmdZ icon">
 </p>
 
 <h1 align="center">CmdZ</h1>
