@@ -1,0 +1,27 @@
+(() => {
+  let pendingUndo = null;
+  const beforeInputListener = (event) => {
+    if (event.inputType === "historyUndo" && pendingUndo) {
+      pendingUndo.undoObserved = true;
+    }
+  };
+  const listener = (event) => {
+    if (!event.metaKey || event.key.toLowerCase() !== "z") return;
+    const pending = { event, undoObserved: false };
+    pendingUndo = pending;
+    setTimeout(() => {
+      if (pendingUndo === pending) pendingUndo = null;
+      if (!pending.undoObserved && !pending.event.defaultPrevented) {
+        chrome.runtime.sendMessage({ type: "reopen-last-closed-tab" });
+      }
+    }, 0);
+  };
+  document.addEventListener("keydown", listener);
+  document.addEventListener("beforeinput", beforeInputListener, true);
+  globalThis.__cmdzShortcutListener = {
+    beforeInputListener,
+    disposeRecovery() {},
+    listener,
+    target: document,
+  };
+})();

@@ -52,7 +52,16 @@ python3 -m json.tool manifest.json >/dev/null
 unzip -t dist/CmdZ-1.0.5.zip
 ```
 
-Then test the extension manually:
+The automated runtime suite additionally requires `playwright-core` and its
+matching Chrome for Testing binary. It uses Playwright's installed browser by
+default; set `PLAYWRIGHT_CORE` or `CHROME_BINARY` when those are in custom
+locations:
+
+```sh
+node tests/e2e.cjs
+```
+
+Then verify the extension manually:
 
 1. Reload CmdZ at `chrome://extensions` while leaving the test page open.
 2. Type in an input, press Undo, and confirm that the text change is undone

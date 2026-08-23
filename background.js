@@ -1,85 +1,116 @@
-const REOPEN_MESSAGE = "reopen-last-closed-tab";
-const REPAIR_MESSAGE = "repair-shortcut-listener";
-const repairsInProgress = new Set();
+(() => {
+  const REOPEN_MESSAGE = "reopen-last-closed-tab";
+  const REPAIR_MESSAGE = "repair-shortcut-listener";
+  const CONTENT_SCRIPT = "content.js";
 
-async function reopenLastClosedTab() {
-  const sessions = await chrome.sessions.getRecentlyClosed();
-  const lastClosedTab = sessions.find((session) => session.tab?.sessionId);
+  function createBackgroundController(chromeApi) {
+    const repairsInProgress = new Set();
 
-  if (lastClosedTab) {
-    await chrome.sessions.restore(lastClosedTab.tab.sessionId);
-    return true;
+    async function reopenLastClosedTab() {
+      const sessions = await chromeApi.sessions.getRecentlyClosed();
+      const lastClosedTab = sessions.find(
+        (session) => session.tab?.sessionId,
+      );
+
+      if (!lastClosedTab) {
+        return false;
+      }
+
+      await chromeApi.sessions.restore(lastClosedTab.tab.sessionId);
+      return true;
+    }
+
+    function injectShortcutListener(tabId) {
+      return chromeApi.scripting.executeScript({
+        target: { tabId, allFrames: true },
+        files: [CONTENT_SCRIPT],
+      });
+    }
+
+    async function injectShortcutListenerIntoOpenTabs() {
+      const tabs = await chromeApi.tabs.query({});
+      const injections = tabs
+        .filter((tab) => Number.isInteger(tab.id))
+        .map((tab) => injectShortcutListener(tab.id));
+
+      await Promise.allSettled(injections);
+    }
+
+    async function repairShortcutListener(tabId) {
+      if (repairsInProgress.has(tabId)) {
+        return;
+      }
+
+      repairsInProgress.add(tabId);
+
+      try {
+        await injectShortcutListener(tabId);
+      } finally {
+        repairsInProgress.delete(tabId);
+      }
+    }
+
+    function handleMessage(message, sender, sendResponse) {
+      if (message?.type === REOPEN_MESSAGE) {
+        reopenLastClosedTab()
+          .then((restored) => sendResponse({ restored }))
+          .catch(() => sendResponse({ restored: false }));
+        return true;
+      }
+
+      if (
+        message?.type === REPAIR_MESSAGE &&
+        Number.isInteger(sender.tab?.id)
+      ) {
+        repairShortcutListener(sender.tab.id)
+          .then(() => sendResponse({ repaired: true }))
+          .catch(() => sendResponse({ repaired: false }));
+        return true;
+      }
+
+      return false;
+    }
+
+    return {
+      handleMessage,
+      injectShortcutListenerIntoOpenTabs,
+      reopenLastClosedTab,
+      repairShortcutListener,
+    };
   }
 
-  return false;
-}
+  function installBackground(chromeApi) {
+    const controller = createBackgroundController(chromeApi);
 
-async function injectShortcutListenerIntoOpenTabs() {
-  const tabs = await chrome.tabs.query({});
-  const injections = tabs
-    .filter((tab) => Number.isInteger(tab.id))
-    .map((tab) =>
-      chrome.scripting.executeScript({
-        target: { tabId: tab.id, allFrames: true },
-        files: ["content.js"],
-      }),
-    );
-
-  await Promise.allSettled(injections);
-}
-
-async function repairShortcutListener(tabId) {
-  if (repairsInProgress.has(tabId)) {
-    return;
-  }
-
-  repairsInProgress.add(tabId);
-
-  try {
-    await chrome.scripting.executeScript({
-      target: { tabId, allFrames: true },
-      files: ["content.js"],
+    chromeApi.runtime.onInstalled.addListener(() => {
+      controller.injectShortcutListenerIntoOpenTabs().catch(() => {
+        // Restricted pages reject injection and keep the toolbar fallback.
+      });
     });
-  } finally {
-    repairsInProgress.delete(tabId);
-  }
-}
 
-chrome.runtime.onInstalled.addListener(() => {
-  injectShortcutListenerIntoOpenTabs().catch(() => {
-    // Restricted pages reject injection and keep the toolbar fallback.
-  });
-});
+    chromeApi.runtime.onStartup.addListener(() => {
+      controller.injectShortcutListenerIntoOpenTabs().catch(() => {
+        // Static content scripts still cover pages loaded during startup.
+      });
+    });
 
-chrome.runtime.onStartup.addListener(() => {
-  injectShortcutListenerIntoOpenTabs().catch(() => {
-    // Static content scripts still cover pages loaded during startup.
-  });
-});
+    chromeApi.runtime.onMessage.addListener(controller.handleMessage);
 
-chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-  if (message?.type === REOPEN_MESSAGE) {
-    reopenLastClosedTab()
-      .then((restored) => sendResponse({ restored }))
-      .catch(() => sendResponse({ restored: false }));
-    return true;
+    chromeApi.action.onClicked.addListener(() => {
+      controller.reopenLastClosedTab().catch(() => {
+        // There may be no restorable tab yet. Nothing else is needed.
+      });
+    });
+
+    return controller;
   }
 
-  if (
-    message?.type === REPAIR_MESSAGE &&
-    Number.isInteger(_sender.tab?.id)
-  ) {
-    repairShortcutListener(_sender.tab.id)
-      .then(() => sendResponse({ repaired: true }))
-      .catch(() => sendResponse({ repaired: false }));
-    return true;
+  if (typeof module === "object" && module.exports) {
+    module.exports = {
+      createBackgroundController,
+      installBackground,
+    };
+  } else {
+    installBackground(chrome);
   }
-
-  return false;
-});
-
-chrome.action.onClicked.addListener(() => {
-  reopenLastClosedTab().catch(() => {
-    // There may be no restorable tab yet. Nothing else is needed.
-  });
-});
+})();
