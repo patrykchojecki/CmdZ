@@ -96,7 +96,8 @@ unzip -t dist/CmdZ-<version>.zip
 ```
 
 The packaging script validates syntax, tests, and the manifest before archiving.
-Do not overwrite a released ZIP merely to validate a development change.
+It refuses to overwrite an existing release and publishes the new ZIP only after
+the archive passes validation. Increment the version for a new release.
 
 ## Pull requests
 

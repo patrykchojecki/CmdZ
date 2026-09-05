@@ -12,6 +12,11 @@ if [ -z "$VERSION" ]; then
   exit 1
 fi
 
+if [ -e "$ARCHIVE" ]; then
+  echo "Release archive already exists: $ARCHIVE. Increment manifest.json's version before packaging." >&2
+  exit 1
+fi
+
 node --check "$PROJECT_DIR/background.js"
 node --check "$PROJECT_DIR/content.js"
 node --check "$PROJECT_DIR/recovery.js"
@@ -19,9 +24,11 @@ node --test "$PROJECT_DIR/tests/"*.test.js
 python3 -m json.tool "$PROJECT_DIR/manifest.json" >/dev/null
 
 mkdir -p "$PROJECT_DIR/dist"
+PACKAGE_DIR=$(mktemp -d "$PROJECT_DIR/dist/.package.XXXXXX")
+trap 'rm -rf "$PACKAGE_DIR"' EXIT HUP INT TERM
 cd "$PROJECT_DIR"
 
-zip -FS "$ARCHIVE" \
+zip "$PACKAGE_DIR/extension.zip" \
   manifest.json \
   background.js \
   content.js \
@@ -32,5 +39,7 @@ zip -FS "$ARCHIVE" \
   icons/icon-48.png \
   icons/icon-128.png
 
-unzip -t "$ARCHIVE" >/dev/null
+unzip -t "$PACKAGE_DIR/extension.zip" >/dev/null
+# Publish only a complete archive, without replacing an existing release.
+ln "$PACKAGE_DIR/extension.zip" "$ARCHIVE"
 echo "Created $ARCHIVE"
