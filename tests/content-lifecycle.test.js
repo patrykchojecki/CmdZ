@@ -36,6 +36,7 @@ function harness({ visible = true, child = false } = {}) {
   const timeouts = [];
   const intervals = new Set();
   const messages = [];
+  let now = 0;
   const document = {
     ...eventTarget(),
     visibilityState: visible ? "visible" : "hidden",
@@ -56,6 +57,7 @@ function harness({ visible = true, child = false } = {}) {
   };
   const context = vm.createContext({
     window, document, chrome: { runtime }, URL,
+    Date: { now: () => now },
     navigator: { platform: "MacIntel" },
     setTimeout: (callback) => timeouts.push(callback),
     setInterval: (callback) => { intervals.add(callback); return callback; },
@@ -69,6 +71,7 @@ function harness({ visible = true, child = false } = {}) {
     },
     flush() { while (timeouts.length) timeouts.shift()(); },
     tick() { for (const callback of [...intervals]) callback(); },
+    advance(ms) { now += ms; this.tick(); },
   };
 }
 
@@ -164,6 +167,43 @@ test("extension teardown during sendMessage does not throw", () => {
   h.runtime.sendMessage = () => { throw new Error("Extension context invalidated"); };
   h.keydown();
   assert.doesNotThrow(() => h.flush());
+});
+
+test("unresponsive recovery frames time out and retry within a bounded budget", () => {
+  const h = harness();
+  h.install();
+  h.runtime.id = undefined;
+  h.tick();
+  h.advance(4999);
+  assert.equal(h.frames.length, 1);
+  h.advance(1);
+  assert.equal(h.frames[0].isConnected, false);
+  assert.equal(h.frames.length, 2);
+  h.advance(5000);
+  assert.equal(h.frames.length, 3);
+  h.advance(5000);
+  assert.equal(h.frames[2].isConnected, false);
+  assert.equal(h.intervals.size, 0);
+
+  h.document.visibilityState = "hidden";
+  h.document.dispatch("visibilitychange");
+  h.document.visibilityState = "visible";
+  h.document.dispatch("visibilitychange");
+  assert.equal(h.frames.length, 4);
+  assert.equal(h.intervals.size, 1);
+});
+
+test("a removed recovery frame counts as a failed attempt", () => {
+  const h = harness();
+  h.install();
+  h.runtime.id = undefined;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    h.tick();
+    h.frames[attempt].remove();
+  }
+  h.tick();
+  assert.equal(h.frames.length, 3);
+  assert.equal(h.intervals.size, 0);
 });
 
 test("recovery acknowledges only a successful repair response", () => {

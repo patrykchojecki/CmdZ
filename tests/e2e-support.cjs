@@ -207,6 +207,46 @@ async function loadUnpackedExtension(context, extensionDirectory) {
   } finally {
     await session.detach();
   }
+
+  await waitForShortcutListeners(context);
+}
+
+async function waitForShortcutListeners(context) {
+  const worker = context.serviceWorkers().find((item) =>
+    item.url().startsWith("chrome-extension://"),
+  ) || await context.waitForEvent("serviceworker");
+  const deadline = Date.now() + 10000;
+  while (Date.now() < deadline) {
+    const ready = await worker.evaluate(async () => {
+      const tabs = (await chrome.tabs.query({})).filter((tab) =>
+        /^https?:/.test(tab.url || ""),
+      );
+      const results = await Promise.all(tabs.map((tab) =>
+        chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          func: () => Boolean(globalThis.__cmdzShortcutListener),
+        }),
+      ));
+      return results.length > 0 && results.every((frames) => frames[0]?.result);
+    });
+    if (ready) return;
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  }
+  assert.fail("CmdZ did not attach its shortcut listener to the open pages");
+}
+
+async function setExtensionEnabled(page, extensionId, enabled) {
+  await page.evaluate(({ extensionId, enabled }) => {
+    const item = document.querySelector("extensions-manager").shadowRoot
+      .querySelector("extensions-item-list").shadowRoot.querySelector(`#${extensionId}`);
+    const toggle = item.shadowRoot.querySelector("#enableToggle");
+    if (toggle.checked !== enabled) toggle.click();
+  }, { extensionId, enabled });
+  await page.waitForFunction(({ extensionId, enabled }) => {
+    const item = document.querySelector("extensions-manager").shadowRoot
+      .querySelector("extensions-item-list").shadowRoot.querySelector(`#${extensionId}`);
+    return item.data.state === (enabled ? "ENABLED" : "DISABLED");
+  }, { extensionId, enabled });
 }
 
 async function reloadExtension(context, extensionDirectory) {
@@ -289,6 +329,8 @@ module.exports = {
   createUpgradeableExtensionDirectory,
   loadUnpackedExtension,
   reloadExtension,
+  setExtensionEnabled,
   startFixtureServer,
+  waitForShortcutListeners,
   waitForRestoredTab,
 };

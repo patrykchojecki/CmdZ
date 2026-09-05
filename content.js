@@ -4,6 +4,7 @@
   const RECOVERY_COMPLETE_MESSAGE = "cmdz-shortcut-listener-recovered";
   const RECOVERY_FAILED_MESSAGE = "cmdz-shortcut-listener-recovery-failed";
   const RECOVERY_CHECK_INTERVAL_MS = 1000;
+  const RECOVERY_RESPONSE_TIMEOUT_MS = 5000;
 
   function isMacPlatform(platform) {
     return /mac/i.test(platform || "");
@@ -158,6 +159,14 @@
     let recoveryFrame = null;
     let recoveryTimer = null;
     let recoveryFailures = 0;
+    let recoveryStartedAt = 0;
+
+    const failRecoveryAttempt = () => {
+      recoveryFrame?.remove();
+      recoveryFrame = null;
+      // Do not keep waking the worker if site access remains unavailable.
+      if (++recoveryFailures >= 3) clearInterval(recoveryTimer);
+    };
 
     const handleRecoveryComplete = (event) => {
       if (
@@ -171,10 +180,7 @@
         dispose();
       } else if (event.data === RECOVERY_FAILED_MESSAGE) {
         // A transient injection failure can be retried on the next check.
-        recoveryFrame.remove();
-        recoveryFrame = null;
-        // Do not keep waking the worker if site access remains unavailable.
-        if (++recoveryFailures >= 3) clearInterval(recoveryTimer);
+        failRecoveryAttempt();
       }
     };
 
@@ -182,16 +188,26 @@
       if (
         !ownsRecovery ||
         document.visibilityState !== "visible" ||
-        hasActiveExtensionContext() ||
-        recoveryFrame?.isConnected
+        hasActiveExtensionContext()
       ) {
         return;
+      }
+
+      if (recoveryFrame) {
+        // Disabled extensions and blocked frames may never send a response.
+        if (
+          recoveryFrame.isConnected &&
+          Date.now() - recoveryStartedAt < RECOVERY_RESPONSE_TIMEOUT_MS
+        ) return;
+        failRecoveryAttempt();
+        if (recoveryFailures >= 3) return;
       }
 
       recoveryFrame = document.createElement("iframe");
       recoveryFrame.hidden = true;
       recoveryFrame.setAttribute("aria-hidden", "true");
       recoveryFrame.src = recoveryUrl;
+      recoveryStartedAt = Date.now();
       (document.documentElement || document).append(recoveryFrame);
     };
 

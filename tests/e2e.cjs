@@ -12,7 +12,9 @@ const {
   createUpgradeableExtensionDirectory,
   loadUnpackedExtension,
   reloadExtension,
+  setExtensionEnabled,
   startFixtureServer,
+  waitForShortcutListeners,
   waitForRestoredTab,
 } = require("./e2e-support.cjs");
 
@@ -96,6 +98,28 @@ async function run() {
       )}`,
     );
     await sameVersionRestore.close();
+
+    // A disabled extension's recovery frame loads an error page and never
+    // acknowledges repair. Re-enabling must recover without refreshing the site.
+    const extensionId = new URL(context.serviceWorkers()[0].url()).host;
+    const extensionsPage = await context.newPage();
+    await extensionsPage.goto(`chrome://extensions/?id=${extensionId}`);
+    await setExtensionEnabled(extensionsPage, extensionId, false);
+    await page.bringToFront();
+    const recoveryDeadline = Date.now() + 5000;
+    while (!page.frames().some((frame) => frame.url().startsWith("chrome-error:"))) {
+      assert.ok(Date.now() < recoveryDeadline, "No failed recovery frame appeared while disabled");
+      await page.waitForTimeout(50);
+    }
+    await extensionsPage.bringToFront();
+    await setExtensionEnabled(extensionsPage, extensionId, true);
+    await page.bringToFront();
+    await waitForShortcutListeners(context);
+    await extensionsPage.close();
+    await closeRestorableTab(context, origin, "re-enabled");
+    await page.locator("body").focus();
+    await page.keyboard.press(undo);
+    await assertRestoredTab(context, "re-enabled", "CmdZ did not recover after disable/re-enable");
 
     await closeRestorableTab(context, origin, "hidden-beforeinput");
     const hiddenBeforeInput = page.locator("#hidden-beforeinput");
