@@ -2,6 +2,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
+const { pathToFileURL } = require("node:url");
 
 const {
   assertNoRestore,
@@ -14,6 +15,7 @@ const {
   reloadExtension,
   setExtensionEnabled,
   startFixtureServer,
+  triggerToolbarAction,
   waitForShortcutListeners,
   waitForRestoredTab,
 } = require("./e2e-support.cjs");
@@ -42,6 +44,10 @@ async function run() {
     await page.goto(`${origin}/runtime.html`);
     // Install into an already-open document, then exercise upgrade and reload.
     await loadUnpackedExtension(context, extensionDirectory);
+
+    await triggerToolbarAction(context, page);
+    await page.waitForTimeout(200);
+    assert.equal(context.pages().length, 1, "An empty session history should do nothing");
 
     await closeRestorableTab(context, origin, "plain-page");
     await page.locator("body").focus();
@@ -340,7 +346,38 @@ async function run() {
     await assertRestoredTab(context, "skip-window", "A newer window session hid the newest individual tab");
     assert.equal(context.pages().some((item) => item.url().includes("closed=whole-window")), false);
 
-    console.log("Verified native and canceled Undo, empty histories, custom handlers, repeat, modifiers, dynamic frames, install, reload, worker restart, tab order, and closed-window skipping.");
+    for (const [marker, url] of [
+      ["toolbar-settings", "chrome://settings/"],
+      ["toolbar-newtab", "chrome://newtab/"],
+      ["toolbar-file", pathToFileURL(path.join(__dirname, "fixtures/frame.html")).href],
+    ]) {
+      await page.goto(url);
+      await closeRestorableTab(context, origin, marker);
+      await triggerToolbarAction(context, page);
+      await assertRestoredTab(context, marker, `Toolbar restoration failed on ${url}`);
+    }
+
+    await page.goto(`${origin}/runtime.html`);
+    for (const marker of ["toolbar-fast-a", "toolbar-fast-b", "toolbar-fast-c"]) {
+      await closeRestorableTab(context, origin, marker);
+    }
+    await Promise.all(Array.from({ length: 3 }, () => triggerToolbarAction(context, page)));
+    const fastRestores = [];
+    for (const marker of ["toolbar-fast-a", "toolbar-fast-b", "toolbar-fast-c"]) {
+      const restored = await waitForRestoredTab(context, marker);
+      assert.ok(restored, `Rapid toolbar clicks lost ${marker}`);
+      fastRestores.push(restored);
+    }
+    for (const restored of fastRestores) await restored.close();
+
+    await page.goto(`${origin}/frame.html`);
+    await page.goBack();
+    await closeRestorableTab(context, origin, "back-navigation");
+    await page.locator("body").focus();
+    await page.keyboard.press(undo);
+    await assertRestoredTab(context, "back-navigation", "The shortcut stopped after back navigation");
+
+    console.log("Verified native and canceled Undo, empty histories, custom handlers, repeat, modifiers, dynamic frames, install, released-ZIP upgrade, reload, disable/re-enable, worker restart, tab order, closed-window skipping, toolbar fallbacks, rapid clicks, and back navigation.");
 
     console.log(
       `CmdZ runtime checks passed in ${path.basename(chromeBinary)} ${

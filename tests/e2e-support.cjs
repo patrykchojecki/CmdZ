@@ -1,10 +1,11 @@
 const assert = require("node:assert/strict");
+const { execFileSync } = require("node:child_process");
 const fs = require("node:fs");
 const http = require("node:http");
 const os = require("node:os");
 const path = require("node:path");
 
-const projectDirectory = path.resolve(__dirname, "..");
+const projectDirectory = path.resolve(process.env.CMDZ_EXTENSION_DIR || path.join(__dirname, ".."));
 const fixtureDirectory = path.join(__dirname, "fixtures");
 const currentExtensionFiles = [
   "manifest.json",
@@ -12,6 +13,7 @@ const currentExtensionFiles = [
   "content.js",
   "recovery.html",
   "recovery.js",
+  "icons",
 ];
 
 function findPlaywrightCore() {
@@ -152,9 +154,10 @@ async function closeRestorableTab(context, origin, marker) {
 
 function copyProjectFiles(extensionDirectory, files) {
   for (const file of files) {
-    fs.copyFileSync(
+    fs.cpSync(
       path.join(projectDirectory, file),
       path.join(extensionDirectory, file),
+      { recursive: true },
     );
   }
 }
@@ -163,33 +166,10 @@ function createUpgradeableExtensionDirectory() {
   const extensionDirectory = fs.mkdtempSync(
     path.join(os.tmpdir(), "cmdz-e2e-extension-"),
   );
-  const manifest = JSON.parse(
-    fs.readFileSync(path.join(projectDirectory, "manifest.json"), "utf8"),
-  );
-  const legacyManifest = {
-    ...manifest,
-    version: "1.0.4",
-  };
-
-  fs.cpSync(
-    path.join(projectDirectory, "icons"),
-    path.join(extensionDirectory, "icons"),
-    { recursive: true },
-  );
-
-  fs.writeFileSync(
-    path.join(extensionDirectory, "manifest.json"),
-    `${JSON.stringify(legacyManifest, null, 2)}\n`,
-  );
-  copyProjectFiles(extensionDirectory, [
-    "background.js",
-    "recovery.html",
-    "recovery.js",
+  // Exercise the actual previously shipped ZIP, including its recovery code.
+  execFileSync("unzip", [
+    "-q", path.join(__dirname, "../dist/CmdZ-1.0.5.zip"), "-d", extensionDirectory,
   ]);
-  fs.copyFileSync(
-    path.join(fixtureDirectory, "legacy-content.js"),
-    path.join(extensionDirectory, "content.js"),
-  );
 
   return extensionDirectory;
 }
@@ -247,6 +227,26 @@ async function setExtensionEnabled(page, extensionId, enabled) {
       .querySelector("extensions-item-list").shadowRoot.querySelector(`#${extensionId}`);
     return item.data.state === (enabled ? "ENABLED" : "DISABLED");
   }, { extensionId, enabled });
+}
+
+async function triggerToolbarAction(context, page) {
+  const extensionId = new URL(context.serviceWorkers().find((worker) =>
+    worker.url().startsWith("chrome-extension://"),
+  ).url()).host;
+  const session = await context.browser().newBrowserCDPSession();
+  try {
+    // This API takes a browser tab target, rather than a page target. New Tab's
+    // internal page URL can differ from the browser tab URL.
+    const { targetInfos } = await session.send("Target.getTargets", {
+      filter: [{ type: "tab", exclude: false }],
+    });
+    const target = targetInfos.find((item) => item.url === page.url()) ||
+      (targetInfos.length === 1 ? targetInfos[0] : null);
+    assert.ok(target, `No browser tab target for ${page.url()}`);
+    await session.send("Extensions.triggerAction", { id: extensionId, targetId: target.targetId });
+  } finally {
+    await session.detach();
+  }
 }
 
 async function reloadExtension(context, extensionDirectory) {
@@ -331,6 +331,7 @@ module.exports = {
   reloadExtension,
   setExtensionEnabled,
   startFixtureServer,
+  triggerToolbarAction,
   waitForShortcutListeners,
   waitForRestoredTab,
 };

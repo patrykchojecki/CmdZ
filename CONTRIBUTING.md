@@ -51,8 +51,9 @@ python3 -m json.tool manifest.json >/dev/null
 ```
 
 The automated runtime suite additionally requires an existing `playwright-core`
-installation and a recent Chrome for Testing binary with `Extensions.loadUnpacked`
-support. These are test tools, not extension dependencies. It uses Playwright's
+installation, `unzip`, and a recent Chrome for Testing binary with
+`Extensions.loadUnpacked` and `Extensions.triggerAction` support. These are test
+tools, not extension dependencies. It uses Playwright's
 installed browser by default; set `PLAYWRIGHT_CORE` or `CHROME_BINARY` when those are in custom
 locations:
 
@@ -62,9 +63,15 @@ node tests/e2e.cjs
 
 The suite uses temporary profiles and local fixtures. It covers native Undo and
 exhausted histories, textarea/password/shadow-DOM inputs, canceled Undo, custom
-handlers, held keys, modifiers, dynamic frames, installation, extension reloads,
-worker restart, tab restoration order, and skipping closed windows.
+handlers, held keys, modifiers, dynamic frames, installation, upgrade from the
+published 1.0.5 ZIP, extension reloads, disable/re-enable, worker restart, tab
+restoration order, skipping closed windows, toolbar fallbacks on restricted pages,
+rapid toolbar clicks, and back navigation.
 The Node tests also exercise concurrent restores, API failures, and recovery cleanup.
+
+To verify a release ZIP, extract it to a temporary directory and point
+`CMDZ_EXTENSION_DIR` at that directory when running `node tests/e2e.cjs`. The
+suite upgrades the installed 1.0.5 release to those exact extracted files.
 
 Manually verify behavior that depends on the OS, browser UI, or real editors:
 
