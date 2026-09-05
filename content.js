@@ -2,6 +2,7 @@
   const REOPEN_MESSAGE = "reopen-last-closed-tab";
   const LISTENER_STATE = "__cmdzShortcutListener";
   const RECOVERY_COMPLETE_MESSAGE = "cmdz-shortcut-listener-recovered";
+  const RECOVERY_FAILED_MESSAGE = "cmdz-shortcut-listener-recovery-failed";
   const RECOVERY_CHECK_INTERVAL_MS = 1000;
 
   function isMacPlatform(platform) {
@@ -60,8 +61,9 @@
     schedule = (callback) => setTimeout(callback, 0),
   } = {}) {
     let pendingUndo = null;
+    let disposed = false;
 
-    function handleBeforeInput(event) {
+    function handleInput(event) {
       if (
         event.isTrusted === false ||
         event.inputType !== "historyUndo" ||
@@ -75,8 +77,10 @@
 
     function handleKeydown(event) {
       if (
+        disposed ||
         event.isTrusted === false ||
         event.isComposing ||
+        event.keyCode === 229 ||
         event.repeat ||
         !isUndoShortcut(event, platform)
       ) {
@@ -94,14 +98,22 @@
           pendingUndo = null;
         }
 
-        if (!pending.undoObserved && !pending.event.defaultPrevented) {
+        if (
+          !disposed &&
+          !pending.undoObserved &&
+          !pending.event.defaultPrevented
+        ) {
           restore();
         }
       });
     }
 
     return {
-      handleBeforeInput,
+      dispose() {
+        disposed = true;
+        pendingUndo = null;
+      },
+      handleInput,
       handleKeydown,
     };
   }
@@ -117,7 +129,9 @@
   } else {
     const previousState = globalThis[LISTENER_STATE];
 
-    if (previousState) {
+    if (previousState?.dispose) {
+      previousState.dispose();
+    } else if (previousState) {
       previousState.target.removeEventListener(
         "keydown",
         previousState.listener,
@@ -137,27 +151,31 @@
 
     const controller = createShortcutController();
     const listener = (event) => controller.handleKeydown(event);
-    const beforeInputListener = (event) =>
-      controller.handleBeforeInput(event);
+    const beforeInputListener = (event) => controller.handleInput(event);
     const recoveryUrl = chrome.runtime.getURL("recovery.html");
     const recoveryOrigin = new URL(recoveryUrl).origin;
     const ownsRecovery = window === window.top;
     let recoveryFrame = null;
     let recoveryTimer = null;
+    let recoveryFailures = 0;
 
     const handleRecoveryComplete = (event) => {
       if (
         event.origin !== recoveryOrigin ||
-        event.source !== recoveryFrame?.contentWindow ||
-        event.data !== RECOVERY_COMPLETE_MESSAGE
+        event.source !== recoveryFrame?.contentWindow
       ) {
         return;
       }
 
-      clearInterval(recoveryTimer);
-      recoveryFrame.remove();
-      recoveryFrame = null;
-      window.removeEventListener("message", handleRecoveryComplete);
+      if (event.data === RECOVERY_COMPLETE_MESSAGE) {
+        dispose();
+      } else if (event.data === RECOVERY_FAILED_MESSAGE) {
+        // A transient injection failure can be retried on the next check.
+        recoveryFrame.remove();
+        recoveryFrame = null;
+        // Do not keep waking the worker if site access remains unavailable.
+        if (++recoveryFailures >= 3) clearInterval(recoveryTimer);
+      }
     };
 
     const recoverInvalidContext = () => {
@@ -180,23 +198,47 @@
     const disposeRecovery = () => {
       clearInterval(recoveryTimer);
       recoveryFrame?.remove();
+      recoveryFrame = null;
+      document.removeEventListener("visibilitychange", updateRecoveryTimer);
       window.removeEventListener("message", handleRecoveryComplete);
     };
 
+    const updateRecoveryTimer = () => {
+      clearInterval(recoveryTimer);
+      if (document.visibilityState === "visible") {
+        recoveryFailures = 0;
+        recoverInvalidContext();
+        recoveryTimer = setInterval(
+          recoverInvalidContext,
+          RECOVERY_CHECK_INTERVAL_MS,
+        );
+      }
+    };
+
+    function dispose() {
+      controller.dispose();
+      window.removeEventListener("keydown", listener, true);
+      window.removeEventListener("beforeinput", beforeInputListener, true);
+      window.removeEventListener("input", beforeInputListener, true);
+      disposeRecovery();
+    }
+
     window.addEventListener("keydown", listener, true);
     window.addEventListener("beforeinput", beforeInputListener, true);
+    // A page listener installed before CmdZ may hide beforeinput; input still
+    // confirms a completed native Undo without inspecting the edited content.
+    window.addEventListener("input", beforeInputListener, true);
 
     if (ownsRecovery) {
-      recoveryTimer = setInterval(
-        recoverInvalidContext,
-        RECOVERY_CHECK_INTERVAL_MS,
-      );
+      updateRecoveryTimer();
+      document.addEventListener("visibilitychange", updateRecoveryTimer);
       window.addEventListener("message", handleRecoveryComplete);
     }
 
     globalThis[LISTENER_STATE] = {
       beforeInputListener,
       beforeInputCapture: true,
+      dispose,
       disposeRecovery,
       keydownCapture: true,
       listener,

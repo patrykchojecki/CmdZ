@@ -4,7 +4,7 @@ This file contains the copy, disclosures, assets, and final manual steps needed 
 
 ## Package
 
-Upload [`dist/CmdZ-1.0.5.zip`](dist/CmdZ-1.0.5.zip). The archive contains `manifest.json` at its root and only the files Chrome needs at runtime.
+The released package is [`dist/CmdZ-1.0.5.zip`](dist/CmdZ-1.0.5.zip). It is a snapshot, not a build of the current working tree. Before publishing source changes, prepare a new version and run `./scripts/package-extension.sh`. The archive contains `manifest.json` at its root and only the files Chrome needs at runtime.
 
 ## Store Listing tab
 
@@ -16,7 +16,7 @@ Upload [`dist/CmdZ-1.0.5.zip`](dist/CmdZ-1.0.5.zip). The archive contains `manif
 CmdZ
 ```
 
-**Summary** — sourced from `manifest.json`; 63 of 132 characters
+**Summary** — sourced from `manifest.json`
 
 ```text
 Reopen closed tabs with Command+Z without overriding page undo.
@@ -27,17 +27,17 @@ Reopen closed tabs with Command+Z without overriding page undo.
 ```text
 Recover the last tab you closed in Chrome without sacrificing Undo on a website.
 
-Press Command+Z on macOS or Ctrl+Z on Windows and Linux. CmdZ first gives the website its normal Undo shortcut. If the page initiates native Undo or explicitly handles the shortcut, CmdZ steps aside. If nothing handles it, CmdZ restores your most recently closed individual tab. Native text fields and content-editable areas still restore after their Undo history is exhausted without requiring focus to move.
+Press Command+Z on macOS or Ctrl+Z on Windows and Linux. CmdZ first gives the website its normal Undo shortcut. If Chrome reports native Undo or the page cancels the shortcut, CmdZ steps aside. Otherwise, CmdZ restores your most recently closed individual tab. Native text fields and content-editable areas still restore after Chrome's Undo history is exhausted without requiring focus to move.
 
 The Command+Z behavior is inspired by Safari on macOS. A toolbar button is also available for direct tab restoration.
 
 - Reopens the most recently closed individual tab
-- Preserves native Undo and shortcuts explicitly handled by web editors
+- Respects native Undo events and shortcuts canceled by web editors
 - Never reads typed text, field values, or page contents
 - No tracking, ads, accounts, or network requests
 - No popup, configuration, or third-party dependencies
 
-Chrome does not allow the page-level shortcut listener on the New Tab page, internal chrome:// pages, the omnibox, or browser UI. Use the CmdZ toolbar button in those contexts. Chrome also does not expose custom editors' private Undo stacks, so empty-history detection is available only for native editing controls.
+Chrome does not allow the page-level shortcut listener on the New Tab page, internal chrome:// pages, the Chrome Web Store, the omnibox, or browser UI. Local files are outside CmdZ's site access. Use the CmdZ toolbar button in those contexts. Chrome does not expose custom editors' private Undo stacks, and editors that handle Undo without canceling the shortcut or expose no native Undo events cannot be recognized reliably. Closed windows are skipped.
 ```
 
 **Category**
@@ -149,7 +149,7 @@ cross-platform support, and Safari inspiration.
 1. Confirm that the Privacy Policy URL above loads publicly.
 2. Register or confirm the Chrome Web Store developer account.
 3. Enable 2-Step Verification on the publishing Google Account.
-4. In the Developer Dashboard, select **Add new item** and upload `dist/CmdZ-1.0.5.zip`.
+4. In the Developer Dashboard, select **Add new item** (or update the existing item) and upload the newly versioned package.
 5. Paste the Store Listing and Privacy practices content above.
 6. Upload the three required graphic assets.
 7. Confirm the developer contact email and complete email verification if prompted.

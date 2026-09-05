@@ -3,9 +3,8 @@
 Effective date: July 23, 2026
 
 CmdZ is a Chrome extension whose single purpose is to reopen the most recently
-closed individual tab when a user invokes the platform's normal Undo shortcut
-outside an editing context. The extension works across desktop operating
-systems; its **Command + Z** behavior is inspired by Safari on macOS.
+closed individual tab when the platform's normal Undo shortcut has no page-level
+Undo action to handle. The extension works across desktop operating systems; its **Command + Z** behavior is inspired by Safari on macOS.
 
 ## Data handled
 
@@ -14,8 +13,9 @@ CmdZ uses Chrome's `sessions` permission to request the browser's recently close
 CmdZ also runs a small local shortcut listener on HTTP and HTTPS pages. When
 the user presses **Command + Z** or **Ctrl + Z**, the listener checks the
 trusted key and modifier state, whether the page prevented the shortcut, and
-whether Chrome emitted a `historyUndo` event. It does not read typed text,
-field values, document contents, focused elements, or unrelated keystrokes.
+whether Chrome emitted a `historyUndo` `beforeinput` or `input` event. It does
+not read typed text, field values, document contents, focused elements, or
+unrelated keystrokes.
 
 ## Collection, storage, and sharing
 
@@ -42,9 +42,9 @@ update, or reload. CmdZ never downloads or executes remote code.
 CmdZ's shortcut listener runs on HTTP and HTTPS pages because a browser-scoped
 extension command would consume Undo before a web editor could receive it. The
 listener uses page access only to observe whether the trusted shortcut produced
-an Undo intention or was handled by the page. It does not inspect or modify
-text, field values, focused elements, or document contents. A hidden
-extension-owned recovery frame may briefly load after CmdZ itself is reloaded;
+an Undo intention or was canceled by the page. It does not inspect text, field
+values, focused elements, or document contents, and never changes page text or
+field values. A hidden extension-owned recovery frame may briefly load after CmdZ itself is reloaded;
 it can only request that the packaged listener be reattached to the same tab.
 
 ## Limited Use disclosure

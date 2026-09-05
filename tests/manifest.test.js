@@ -42,3 +42,19 @@ test("provides a toolbar fallback where content scripts cannot run", () => {
     "Reopen the most recently closed tab",
   );
 });
+
+test("MV3 entry points and declared resources exist in the package source", () => {
+  assert.equal(manifest.manifest_version, 3);
+  assert.equal(manifest.minimum_chrome_version, "96");
+  assert.match(manifest.version, /^\d+\.\d+\.\d+(\.\d+)?$/);
+  const files = [
+    manifest.background.service_worker,
+    ...manifest.content_scripts.flatMap((script) => script.js),
+    ...manifest.web_accessible_resources.flatMap((resource) => resource.resources),
+    ...Object.values(manifest.icons),
+    "recovery.js",
+  ];
+  for (const file of files) {
+    assert.ok(fs.statSync(path.join(__dirname, "..", file)).size > 0, file);
+  }
+});

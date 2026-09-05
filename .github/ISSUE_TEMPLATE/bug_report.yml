@@ -7,7 +7,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for reporting a problem. For shortcut conflicts, first check CmdZ at `chrome://extensions/shortcuts`.
+        For shortcut problems, first read SUPPORT.md and check CmdZ's site access at `chrome://extensions`. CmdZ does not register a browser-scoped shortcut.
 
   - type: textarea
     id: problem
@@ -48,23 +48,18 @@ body:
       required: true
 
   - type: input
-    id: macos-version
+    id: os-version
     attributes:
-      label: macOS version
-      placeholder: macOS 15.6
+      label: Operating system and version
+      placeholder: macOS, Windows, or Linux version
     validations:
       required: true
 
-  - type: dropdown
-    id: shortcut
+  - type: input
+    id: cmdz-version
     attributes:
-      label: Shortcut assignment
-      description: What does `chrome://extensions/shortcuts` show for CmdZ?
-      options:
-        - Command + Z is assigned
-        - The shortcut is unassigned
-        - A different shortcut is assigned
-        - Not sure
+      label: CmdZ version and installation source
+      description: Include the version from `chrome://extensions` and whether you used a release ZIP or repository checkout.
     validations:
       required: true
 

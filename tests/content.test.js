@@ -125,7 +125,7 @@ test("does not restore when native undo emits historyUndo", () => {
   const harness = controllerHarness();
 
   harness.controller.handleKeydown(keyEvent({ metaKey: true }));
-  harness.controller.handleBeforeInput(beforeInputEvent());
+  harness.controller.handleInput(beforeInputEvent());
   harness.flush();
 
   assert.equal(harness.restoreCount, 0);
@@ -135,7 +135,7 @@ test("restores after unrelated input when no undo occurred", () => {
   const harness = controllerHarness();
 
   harness.controller.handleKeydown(keyEvent({ metaKey: true }));
-  harness.controller.handleBeforeInput(
+  harness.controller.handleInput(
     beforeInputEvent({ inputType: "insertText" }),
   );
   harness.flush();
@@ -155,7 +155,7 @@ test("ignores synthetic shortcut and undo events created by websites", () => {
   syntheticUndoHarness.controller.handleKeydown(
     keyEvent({ metaKey: true }),
   );
-  syntheticUndoHarness.controller.handleBeforeInput(
+  syntheticUndoHarness.controller.handleInput(
     beforeInputEvent({ isTrusted: false }),
   );
   syntheticUndoHarness.flush();
@@ -175,4 +175,55 @@ test("leaves composing and held shortcuts entirely to the page", () => {
 
   assert.equal(harness.restoreCount, 0);
   assert.equal(harness.scheduledCount, 0);
+});
+
+test("canceled native beforeinput still belongs to the editor", () => {
+  const harness = controllerHarness();
+  harness.controller.handleKeydown(keyEvent({ metaKey: true }));
+  harness.controller.handleInput(beforeInputEvent({ defaultPrevented: true }));
+  harness.flush();
+  assert.equal(harness.restoreCount, 0);
+});
+
+test("a later shortcut can restore after a native Undo", () => {
+  const harness = controllerHarness();
+  harness.controller.handleKeydown(keyEvent({ metaKey: true }));
+  harness.controller.handleInput(beforeInputEvent());
+  // Separate presses can arrive before the first timer runs.
+  harness.controller.handleKeydown(keyEvent({ metaKey: true }));
+  harness.flush();
+  assert.equal(harness.restoreCount, 1);
+});
+
+test("disposal cancels pending and future shortcut work", () => {
+  const harness = controllerHarness();
+  harness.controller.handleKeydown(keyEvent({ metaKey: true }));
+  harness.controller.dispose();
+  harness.controller.handleKeydown(keyEvent({ metaKey: true }));
+  harness.flush();
+  assert.equal(harness.restoreCount, 0);
+});
+
+test("IME keyCode 229 is protected even before isComposing becomes true", () => {
+  const harness = controllerHarness();
+  harness.controller.handleKeydown(keyEvent({ metaKey: true, keyCode: 229 }));
+  harness.flush();
+  assert.equal(harness.scheduledCount, 0);
+  assert.equal(harness.restoreCount, 0);
+});
+
+test("platform shortcuts accept Caps Lock but reject extra modifiers", () => {
+  for (const platform of ["MacIntel", "macOS", "Windows", "Linux x86_64"]) {
+    const modifier = /mac/i.test(platform) ? { metaKey: true } : { ctrlKey: true };
+    const harness = controllerHarness(platform);
+    harness.controller.handleKeydown(keyEvent({ ...modifier, key: "Z" }));
+    for (const extra of [
+      { shiftKey: true }, { altKey: true }, { metaKey: true, ctrlKey: true },
+      { key: "y" }, { key: "Unidentified" },
+    ]) {
+      harness.controller.handleKeydown(keyEvent({ ...modifier, ...extra }));
+    }
+    harness.flush();
+    assert.equal(harness.restoreCount, 1, platform);
+  }
 });

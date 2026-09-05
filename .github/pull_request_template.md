@@ -9,10 +9,12 @@ Link the related issue, if one exists.
 ## Validation
 
 - [ ] `node --check background.js`
+- [ ] `node --check content.js` and `node --check recovery.js`
+- [ ] `node --test tests/*.test.js`
 - [ ] `python3 -m json.tool manifest.json >/dev/null`
-- [ ] `./scripts/package-extension.sh`
-- [ ] `unzip -t dist/CmdZ-<version>.zip`
-- [ ] Tested the unpacked extension in Google Chrome on macOS
+- [ ] `node tests/e2e.cjs` (or explain why unavailable)
+- [ ] Tested native Undo and empty-history restore; list OS/browser versions
+- [ ] For a release: package and validate the newly versioned ZIP
 
 ## Project scope
 

@@ -4,9 +4,10 @@
   const CONTENT_SCRIPT = "content.js";
 
   function createBackgroundController(chromeApi) {
-    const repairsInProgress = new Set();
+    const repairsInProgress = new Map();
+    let restoreQueue = Promise.resolve();
 
-    async function reopenLastClosedTab() {
+    async function restoreMostRecentTab() {
       const sessions = await chromeApi.sessions.getRecentlyClosed();
       const lastClosedTab = sessions.find(
         (session) => session.tab?.sessionId,
@@ -18,6 +19,13 @@
 
       await chromeApi.sessions.restore(lastClosedTab.tab.sessionId);
       return true;
+    }
+
+    function reopenLastClosedTab() {
+      // Read the session list only after the previous restore has completed.
+      const result = restoreQueue.then(restoreMostRecentTab);
+      restoreQueue = result.catch(() => {});
+      return result;
     }
 
     function injectShortcutListener(tabId) {
@@ -38,13 +46,14 @@
 
     async function repairShortcutListener(tabId) {
       if (repairsInProgress.has(tabId)) {
-        return;
+        return repairsInProgress.get(tabId);
       }
 
-      repairsInProgress.add(tabId);
+      const repair = injectShortcutListener(tabId);
+      repairsInProgress.set(tabId, repair);
 
       try {
-        await injectShortcutListener(tabId);
+        await repair;
       } finally {
         repairsInProgress.delete(tabId);
       }

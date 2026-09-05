@@ -16,6 +16,9 @@ const {
   waitForRestoredTab,
 } = require("./e2e-support.cjs");
 
+const modifier = process.platform === "darwin" ? "Meta" : "Control";
+const undo = `${modifier}+z`;
+
 async function run() {
   const { origin, server } = await startFixtureServer();
   const profileDirectory = fs.mkdtempSync(
@@ -31,14 +34,16 @@ async function run() {
       ignoreDefaultArgs: ["--disable-extensions"],
       args: ["--enable-unsafe-extension-debugging"],
     });
-    await loadUnpackedExtension(context, extensionDirectory);
-
+    context.setDefaultTimeout(10000);
+    context.setDefaultNavigationTimeout(10000);
     const page = context.pages()[0] || (await context.newPage());
     await page.goto(`${origin}/runtime.html`);
+    // Install into an already-open document, then exercise upgrade and reload.
+    await loadUnpackedExtension(context, extensionDirectory);
 
     await closeRestorableTab(context, origin, "plain-page");
     await page.locator("body").focus();
-    await page.keyboard.press("Meta+z");
+    await page.keyboard.press(undo);
 
     const plainRestore = await waitForRestoredTab(context, "plain-page");
     assert.ok(
@@ -55,7 +60,7 @@ async function run() {
     );
     await closeRestorableTab(context, origin, "extension-reload");
     await page.locator("body").focus();
-    await page.keyboard.press("Meta+z");
+    await page.keyboard.press(undo);
 
     const reloadRestore = await waitForRestoredTab(context, "extension-reload");
     assert.ok(
@@ -78,7 +83,7 @@ async function run() {
     );
     await closeRestorableTab(context, origin, "same-version-reload");
     await page.locator("body").focus();
-    await page.keyboard.press("Meta+z");
+    await page.keyboard.press(undo);
 
     const sameVersionRestore = await waitForRestoredTab(
       context,
@@ -92,16 +97,29 @@ async function run() {
     );
     await sameVersionRestore.close();
 
+    await closeRestorableTab(context, origin, "hidden-beforeinput");
+    const hiddenBeforeInput = page.locator("#hidden-beforeinput");
+    await hiddenBeforeInput.focus();
+    await hiddenBeforeInput.pressSequentially("draft");
+    await page.keyboard.press(undo);
+    await assertNoRestore(context, "hidden-beforeinput");
+    assert.equal(await hiddenBeforeInput.inputValue(), "");
+
+    await closeRestorableTab(context, origin, "empty-hidden-beforeinput");
+    await page.keyboard.press(undo);
+    await assertRestoredTab(context, "empty-hidden-beforeinput",
+      "CmdZ did not restore after the hidden-beforeinput field exhausted Undo");
+
     await closeRestorableTab(context, origin, "native-input");
     const input = page.locator("#native-input");
     await input.focus();
     await input.pressSequentially("draft");
-    await page.keyboard.press("Meta+z");
+    await page.keyboard.press(undo);
     await assertNoRestore(context, "native-input");
     assert.notEqual(await input.inputValue(), "draft");
 
     await closeRestorableTab(context, origin, "empty-native-input");
-    await page.keyboard.press("Meta+z");
+    await page.keyboard.press(undo);
     await assertRestoredTab(
       context,
       "empty-native-input",
@@ -112,7 +130,7 @@ async function run() {
     const contenteditable = page.locator("#contenteditable");
     await contenteditable.focus();
     await contenteditable.pressSequentially(" draft");
-    await page.keyboard.press("Meta+z");
+    await page.keyboard.press(undo);
     await assertNoRestore(context, "contenteditable");
     assert.equal(
       (await contenteditable.textContent()).includes("draft"),
@@ -120,7 +138,7 @@ async function run() {
     );
 
     await closeRestorableTab(context, origin, "empty-contenteditable");
-    await page.keyboard.press("Meta+z");
+    await page.keyboard.press(undo);
     await assertRestoredTab(
       context,
       "empty-contenteditable",
@@ -129,13 +147,13 @@ async function run() {
 
     await closeRestorableTab(context, origin, "custom-application");
     await page.locator("#application").focus();
-    await page.keyboard.press("Meta+z");
+    await page.keyboard.press(undo);
     await assertNoRestore(context, "custom-application");
     assert.equal(await page.evaluate(() => window.applicationUndoCount), 1);
 
     await closeRestorableTab(context, origin, "stopped-keydown");
     await page.locator("#stopped-keydown").focus();
-    await page.keyboard.press("Meta+z");
+    await page.keyboard.press(undo);
     await assertRestoredTab(
       context,
       "stopped-keydown",
@@ -146,7 +164,7 @@ async function run() {
     const stoppedBeforeInput = page.locator("#stopped-beforeinput");
     await stoppedBeforeInput.focus();
     await stoppedBeforeInput.pressSequentially("draft");
-    await page.keyboard.press("Meta+z");
+    await page.keyboard.press(undo);
     await assertNoRestore(context, "stopped-beforeinput");
     assert.notEqual(await stoppedBeforeInput.inputValue(), "draft");
 
@@ -155,7 +173,7 @@ async function run() {
       origin,
       "empty-stopped-beforeinput",
     );
-    await page.keyboard.press("Meta+z");
+    await page.keyboard.press(undo);
     await assertRestoredTab(
       context,
       "empty-stopped-beforeinput",
@@ -166,16 +184,139 @@ async function run() {
     const docsBody = page.frameLocator("#docs-frame").locator("body");
     await docsBody.focus();
     await docsBody.pressSequentially(" draft");
-    await page.keyboard.press("Meta+z");
+    await page.keyboard.press(undo);
     await assertNoRestore(context, "docs-frame");
 
-    await page.locator("body").focus();
-    await page.keyboard.press("Meta+z");
+    await page.keyboard.press(undo);
     await assertRestoredTab(
       context,
       "docs-frame",
-      "CmdZ did not resume tab restoration after editing",
+      "CmdZ did not restore inside the existing frame after Undo was exhausted",
     );
+
+    // Now exercise the static document_start listener on a fresh document.
+    await page.reload();
+    for (const id of ["textarea", "password", "shadow-input"]) {
+      await closeRestorableTab(context, origin, id);
+      const field = page.locator(`#${id}`);
+      await field.focus();
+      await field.pressSequentially("draft");
+      await page.keyboard.press(undo);
+      await assertNoRestore(context, id);
+      assert.equal(await field.inputValue(), "", id);
+      await page.keyboard.press(undo);
+      await assertRestoredTab(context, id, `Empty ${id} did not restore`);
+    }
+
+    await closeRestorableTab(context, origin, "canceled-beforeinput");
+    const canceledInput = page.locator("#canceled-beforeinput");
+    await canceledInput.focus();
+    await canceledInput.pressSequentially("draft");
+    await page.keyboard.press(undo);
+    await assertNoRestore(context, "canceled-beforeinput");
+    assert.equal(await canceledInput.inputValue(), "draft");
+
+    // Chrome's native Undo history can span fields in the same document.
+    await page.reload();
+    await closeRestorableTab(context, origin, "held-undo");
+    const repeatInput = page.locator("#native-input");
+    await repeatInput.focus();
+    await repeatInput.pressSequentially("draft");
+    await page.keyboard.down(modifier);
+    await page.keyboard.down("z");
+    await page.keyboard.down("z");
+    await page.keyboard.up("z");
+    await page.keyboard.up(modifier);
+    await assertNoRestore(context, "held-undo");
+    assert.equal(await repeatInput.inputValue(), "");
+    await page.keyboard.press(undo);
+    await assertRestoredTab(context, "held-undo", "A fresh press after a held Undo did not restore");
+
+    await closeRestorableTab(context, origin, "other-shortcuts");
+    await page.locator("body").focus();
+    for (const shortcut of [
+      `${modifier}+Shift+z`, `${modifier}+Alt+z`, "Meta+Control+z",
+    ]) {
+      await page.keyboard.press(shortcut);
+    }
+    await page.evaluate(() => window.dispatchEvent(new KeyboardEvent("keydown", {
+      key: "z", metaKey: true, ctrlKey: false, bubbles: true,
+    })));
+    await assertNoRestore(context, "other-shortcuts");
+
+    for (const kind of ["srcdoc", "blank", "same-origin", "cross-origin"]) {
+      const id = `dynamic-${kind}`;
+      await page.evaluate(({ id, kind, origin }) => {
+        const frame = document.createElement("iframe");
+        frame.id = id;
+        const markup = '<!doctype html><body tabindex="0"><input id="frame-input"></body>';
+        if (kind === "srcdoc") frame.srcdoc = markup;
+        if (kind === "same-origin") frame.src = `${origin}/frame.html`;
+        if (kind === "cross-origin") frame.src = `${origin.replace("127.0.0.1", "localhost")}/frame.html`;
+        document.body.append(frame);
+        if (kind === "blank") frame.contentDocument.body.innerHTML = '<input id="frame-input">';
+      }, { id, kind, origin });
+      const field = page.frameLocator(`#${id}`).locator("#frame-input");
+      await field.waitFor();
+      await closeRestorableTab(context, origin, id);
+      await field.focus();
+      await field.pressSequentially("draft");
+      await page.keyboard.press(undo);
+      await assertNoRestore(context, id);
+      assert.equal(await field.inputValue(), "", kind);
+      await page.keyboard.press(undo);
+      await assertRestoredTab(context, id, `Empty ${kind} frame did not restore`);
+    }
+
+    // The modifier checks include Redo, which can repopulate native history.
+    await page.reload();
+    await closeRestorableTab(context, origin, "worker-restart");
+    const worker = context.serviceWorkers().find((item) => item.url().startsWith("chrome-extension://"));
+    assert.ok(worker);
+    await worker.evaluate(() => { globalThis.__cmdzRestartProbe = true; });
+    const session = await context.newCDPSession(page);
+    await session.send("ServiceWorker.enable");
+    await session.send("ServiceWorker.stopAllWorkers");
+    await session.detach();
+    await page.locator("body").focus();
+    await page.keyboard.press(undo);
+    await assertRestoredTab(context, "worker-restart", "A shortcut did not wake the stopped worker");
+    // Playwright retains its Worker handle across MV3 restarts. Verify that
+    // the worker's previous global state was actually discarded.
+    assert.equal(await worker.evaluate(() => globalThis.__cmdzRestartProbe), undefined,
+      "The worker did not restart with a fresh global scope");
+
+    for (const marker of ["rapid-a", "rapid-b", "rapid-c"]) {
+      await closeRestorableTab(context, origin, marker);
+    }
+    const restoredTabs = [];
+    for (const marker of ["rapid-c", "rapid-b", "rapid-a"]) {
+      await page.bringToFront();
+      await page.locator("body").focus();
+      await page.keyboard.press(undo);
+      const restored = await waitForRestoredTab(context, marker);
+      assert.ok(restored, `Tabs were not restored in closing order: ${marker}`);
+      restoredTabs.push(restored);
+    }
+    for (const restored of restoredTabs) await restored.close();
+
+    await closeRestorableTab(context, origin, "skip-window");
+    const restartedWorker = context.serviceWorkers().find((item) => item.url() === worker.url());
+    const windowPagePromise = context.waitForEvent("page");
+    const windowId = await restartedWorker.evaluate(async (origin) => {
+      const created = await chrome.windows.create({ url: `${origin}/frame.html?closed=whole-window` });
+      return created.id;
+    }, origin);
+    const windowPage = await windowPagePromise;
+    await windowPage.waitForLoadState("domcontentloaded");
+    await restartedWorker.evaluate((id) => chrome.windows.remove(id), windowId);
+    await page.bringToFront();
+    await page.locator("body").focus();
+    await page.keyboard.press(undo);
+    await assertRestoredTab(context, "skip-window", "A newer window session hid the newest individual tab");
+    assert.equal(context.pages().some((item) => item.url().includes("closed=whole-window")), false);
+
+    console.log("Verified native and canceled Undo, empty histories, custom handlers, repeat, modifiers, dynamic frames, install, reload, worker restart, tab order, and closed-window skipping.");
 
     console.log(
       `CmdZ runtime checks passed in ${path.basename(chromeBinary)} ${

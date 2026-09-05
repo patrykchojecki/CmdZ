@@ -19,9 +19,21 @@ function findPlaywrightCore() {
     return process.env.PLAYWRIGHT_CORE;
   }
 
+  try {
+    return require.resolve("playwright-core");
+  } catch {
+    // Also support an existing browser-tool installation outside this repo.
+  }
+
   const linksDirectory = path.join(
-    os.homedir(),
-    "Library/Caches/ms-playwright/.links",
+    process.env.PLAYWRIGHT_BROWSERS_PATH || (
+      process.platform === "darwin"
+        ? path.join(os.homedir(), "Library/Caches/ms-playwright")
+        : process.platform === "win32"
+          ? path.join(process.env.LOCALAPPDATA || os.homedir(), "ms-playwright")
+          : path.join(process.env.XDG_CACHE_HOME || path.join(os.homedir(), ".cache"), "ms-playwright")
+    ),
+    ".links",
   );
 
   if (!fs.existsSync(linksDirectory)) {
@@ -122,7 +134,7 @@ async function waitForRestoredTab(context, marker, timeout = 3000) {
       .find((page) => page.url().includes(`closed=${marker}`));
 
     if (restoredPage) {
-      await restoredPage.waitForLoadState("domcontentloaded");
+      await restoredPage.waitForLoadState("domcontentloaded", { timeout: 10000 });
       return restoredPage;
     }
 
@@ -249,12 +261,17 @@ async function reloadExtension(context, extensionDirectory) {
       : null;
   }, extensionId);
   await extensionsPage.close();
+  assert.equal(extensionState?.state, "ENABLED", JSON.stringify(extensionState));
+  assert.deepEqual(extensionState.manifestErrors, []);
+  assert.deepEqual(extensionState.runtimeWarnings, []);
   return extensionState;
 }
 
 async function assertNoRestore(context, marker) {
+  const pagesBefore = context.pages();
   const restoredPage = await waitForRestoredTab(context, marker, 500);
   assert.equal(restoredPage, null, `CmdZ restored ${marker} inside an editor`);
+  assert.deepEqual(context.pages(), pagesBefore, "CmdZ unexpectedly opened a different tab");
 }
 
 async function assertRestoredTab(context, marker, failureMessage) {

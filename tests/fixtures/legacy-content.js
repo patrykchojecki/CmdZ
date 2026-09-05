@@ -6,7 +6,8 @@
     }
   };
   const listener = (event) => {
-    if (!event.metaKey || event.key.toLowerCase() !== "z") return;
+    const isMac = /mac/i.test(navigator.platform);
+    if (!(isMac ? event.metaKey : event.ctrlKey) || event.key.toLowerCase() !== "z") return;
     const pending = { event, undoObserved: false };
     pendingUndo = pending;
     setTimeout(() => {

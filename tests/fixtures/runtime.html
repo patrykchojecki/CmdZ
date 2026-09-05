@@ -11,6 +11,10 @@
       Native input
       <input id="native-input">
     </label>
+    <label>Textarea <textarea id="textarea"></textarea></label>
+    <label>Password <input id="password" type="password"></label>
+    <label>Cancels native Undo <input id="canceled-beforeinput"></label>
+    <div id="shadow-host"></div>
 
     <div id="contenteditable" contenteditable="true" role="textbox">
       Editable text
@@ -29,6 +33,11 @@
       <input id="stopped-beforeinput">
     </label>
 
+    <label>
+      Hides beforeinput from listeners installed later
+      <input id="hidden-beforeinput">
+    </label>
+
     <iframe
       id="docs-frame"
       title="Editable child frame"
@@ -38,11 +47,21 @@
     <script>
       window.applicationUndoCount = 0;
       window.shortcutEvents = [];
+      const isMac = /mac/i.test(navigator.userAgentData?.platform || navigator.platform);
+      const isUndo = (event) => event.key.toLowerCase() === "z" &&
+        !event.altKey && !event.shiftKey &&
+        (isMac ? event.metaKey && !event.ctrlKey : event.ctrlKey && !event.metaKey);
+
+      document.getElementById("shadow-host").attachShadow({ mode: "open" })
+        .innerHTML = '<label>Shadow input <input id="shadow-input"></label>';
+      document.getElementById("canceled-beforeinput").addEventListener("beforeinput", (event) => {
+        if (event.inputType === "historyUndo") event.preventDefault();
+      });
 
       window.addEventListener(
         "keydown",
         (event) => {
-          if (event.key.toLowerCase() === "z" && event.metaKey) {
+          if (isUndo(event)) {
             window.shortcutEvents.push({
               defaultPrevented: event.defaultPrevented,
               target: event.target.id || event.target.localName,
@@ -55,13 +74,7 @@
       document
         .getElementById("application")
         .addEventListener("keydown", (event) => {
-          if (
-            event.key.toLowerCase() === "z" &&
-            event.metaKey &&
-            !event.altKey &&
-            !event.ctrlKey &&
-            !event.shiftKey
-          ) {
+          if (isUndo(event)) {
             event.preventDefault();
             window.applicationUndoCount += 1;
           }
@@ -70,13 +83,7 @@
       document
         .getElementById("stopped-keydown")
         .addEventListener("keydown", (event) => {
-          if (
-            event.key.toLowerCase() === "z" &&
-            event.metaKey &&
-            !event.altKey &&
-            !event.ctrlKey &&
-            !event.shiftKey
-          ) {
+          if (isUndo(event)) {
             event.stopPropagation();
           }
         });
@@ -84,6 +91,12 @@
       window.addEventListener(
         "beforeinput",
         (event) => {
+          if (
+            event.target.id === "hidden-beforeinput" &&
+            event.inputType === "historyUndo"
+          ) {
+            event.stopImmediatePropagation();
+          }
           if (
             event.target.id === "stopped-beforeinput" &&
             event.inputType === "historyUndo"
