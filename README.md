@@ -41,7 +41,7 @@ For now, install CmdZ locally in a few steps:
    git clone https://github.com/patrykchojecki/CmdZ.git
    ```
 
-   Alternatively, download the released [`dist/CmdZ-1.0.5.zip`](dist/CmdZ-1.0.5.zip)
+   Alternatively, download the released [`dist/CmdZ-1.0.6.zip`](dist/CmdZ-1.0.6.zip)
    and extract it. Release ZIPs are snapshots; install the repository folder to
    use the latest source changes.
 

@@ -4,7 +4,7 @@ This file contains the copy, disclosures, assets, and final manual steps needed 
 
 ## Package
 
-The released package is [`dist/CmdZ-1.0.5.zip`](dist/CmdZ-1.0.5.zip). It is a snapshot, not a build of the current working tree. Before publishing source changes, prepare a new version and run `./scripts/package-extension.sh`. The archive contains `manifest.json` at its root and only the files Chrome needs at runtime.
+The released package is [`dist/CmdZ-1.0.6.zip`](dist/CmdZ-1.0.6.zip). It is a snapshot, not a build of the current working tree. Before publishing source changes, prepare a new version and run `./scripts/package-extension.sh`. The archive contains `manifest.json` at its root and only the files Chrome needs at runtime.
 
 ## Store Listing tab
 
