@@ -22,8 +22,18 @@ refresh tabs that were already open once; Chrome does not let the new extension
 detach the invalidated listener left by those releases.
 
 Chrome does not allow the page-level listener on the New Tab page, other
-internal pages, the omnibox, or browser UI; use the CmdZ toolbar icon in those
-contexts.
+`chrome://` pages, the Chrome Web Store, the omnibox, or browser UI. Local files
+are also outside CmdZ's HTTP/HTTPS site access. Use the CmdZ toolbar icon in
+those contexts.
+
+If the CmdZ icon is not visible, open Chrome's **Extensions** menu (the puzzle
+piece beside the address bar) and select **Pin** for CmdZ. Click its toolbar
+icon to restore the most recently closed individual tab; no popup opens.
+See [Chrome's extension toolbar instructions](https://support.google.com/chrome/answer/2664769)
+for more details.
+
+You can also use Chrome's built-in reopen-tab shortcut: **Command + Shift + T**
+on macOS, or **Ctrl + Shift + T** on Windows and Linux.
 
 Check that CmdZ has site access at `chrome://extensions`. After an update or
 reload, refresh an affected page once if recovery was blocked by site access or
